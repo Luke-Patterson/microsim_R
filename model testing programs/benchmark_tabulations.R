@@ -1,6 +1,8 @@
 cat("\014")
 options(error=recover)
 #options(error=NULL)
+basepath <- rprojroot::find_rstudio_root_file()
+setwd(basepath)
 
 # import libraries
 pkgTest <- function(x)
@@ -43,8 +45,8 @@ vars <- c('take_own',
           'resp_len',
           'taker',
           'needer',
-          'doctor1',
-          'hospital1',
+          'doctor',
+          'hospital',
           'anypay',
           'prop_pay'
 )

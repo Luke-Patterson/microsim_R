@@ -147,9 +147,11 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
     
   }
   if (impute_method=="Naive_Bayes") {
+    options(warn=-1)
     d_acs <- Naive_Bayes(d_test=d_acs, d_train=d_fmla, xvars=xvars, 
                          yvars=yvars, test_filts=filts, train_filts=filts, 
                          weights=weights)
+    options(warn=0)
   }
   
   if (impute_method=="ridge_class") {

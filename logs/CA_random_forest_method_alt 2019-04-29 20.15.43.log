@@ -1,0 +1,285 @@
+==============================
+Microsim Log File
+Run Title: CA_random_forest_method_alt
+Date/Time: 2019-04-29 20:15:43
+==============================
+
+------------------------------
+Parameters used
+------------------------------
+acs_house_csv : ss16hca.csv
+acs_person_csv : ss16pca.csv
+ann_hours : NULL
+base_bene_level : 0.55
+bene_effect : TRUE
+bond_elig_adj : 1
+bond_uptake : 0.75
+clone_factor : 0
+cps_csv : CPS2014extract.csv
+dependent_allow : 10
+earnings : 300
+elig_rule_logic : (earnings & weeks & ann_hours & minsize)
+ext_base_effect : TRUE
+ext_resp_len : TRUE
+extend_days : 1
+extend_prob : 0.01
+extend_prop : 1.01
+FEDGOV : FALSE
+fmla_csv : fmla_2012_employee_restrict_puf.csv
+fmla_protect : TRUE
+formula_bene_levels : NULL
+formula_prop_cuts : NULL
+formula_value_cuts : NULL
+full_particip_needer : TRUE
+illchild_elig_adj : 1
+illchild_uptake : 0.2
+illparent_elig_adj : 1
+illparent_uptake : 0.1
+illspouse_elig_adj : 1
+illspouse_uptake : 0.2
+impute_method : random_forest
+intra_impute : TRUE
+kval : 3
+len_method : mean
+LOCALGOV : FALSE
+makelog : TRUE
+matdis_elig_adj : 1
+matdis_uptake : 0.95
+maxlen_bond : 30
+maxlen_DI : 260
+maxlen_illchild : 30
+maxlen_illparent : 30
+maxlen_illspouse : 30
+maxlen_matdis : 260
+maxlen_own : 260
+maxlen_PFL : 30
+maxlen_total : 260
+minsize : NULL
+output : CA_random_forest_method_alt
+output_stats : state_compar
+own_elig_adj : 1
+own_uptake : 0.95
+place_of_work : FALSE
+progalt_post_or_pre : post
+random_seed : 123
+sample_num : NULL
+sample_prop : 0.1
+saveCSV : FALSE
+saveDF : FALSE
+SELFEMP : FALSE
+sens_var : resp_len
+state : 
+STATEGOV : FALSE
+topoff_minlength : 10
+topoff_rate : 0.01
+useCSV : TRUE
+wait_period : 5
+week_bene_cap : 1216
+week_bene_cap_prop : NULL
+week_bene_min : 50
+weeks : NULL
+weightfactor : 1
+xvar_wgts : c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+xvars : c("widowed", "divorced", "separated", "nevermarried", "female", "age_cat", "ltHS", "someCol", "BA", "GradSch", "black", "other", "asian", "native", "hisp", "nochildren", "faminc_cat", "coveligd")
+
+
+------------------------------
+Filtered FMLA Sample Size: 68054
+Formula: paid_hrly ~ female + black + a_age + agesq + BA + GradSch + occ_1 + occ_3 + occ_5 + occ_7 + occ_8 + occ_9 + occ_10 + ind_5 + ind_8 + ind_11 + ind_12
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 1185
+Formula: wks_48_49 ~ age + agesq + lnearn
+Filter condition: wks_cat==2
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: take_own ~ age + male + lnfaminc + black + hisp + coveligd
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2054
+Formula: take_illspouse ~ 1
+Filter condition: nevermarried == 0 & divorced == 0
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: take_illchild ~ 1
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: take_illparent ~ 1
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 639
+Formula: take_matdis ~ 1
+Filter condition: female == 1 & nochildren == 0
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 1148
+Formula: take_bond ~ 1
+Filter condition: nochildren == 0
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: need_own ~ age + male + lnfaminc + black + hisp + coveligd
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2054
+Formula: need_illspouse ~ 1
+Filter condition: nevermarried == 0 & divorced == 0
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: need_illchild ~ 1
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: need_illparent ~ 1
+Filter condition: TRUE
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 639
+Formula: need_matdis ~ 1
+Filter condition: female == 1 & nochildren == 0
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 1148
+Formula: need_bond ~ 1
+Filter condition: nochildren == 0
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 727
+Formula: Random draw from variable length_own
+Filter condition: length_own>0 & is.na(length_own)==FALSE
+Weighted mean of var: 36.0293772471254
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 98
+Formula: Random draw from variable length_illspouse
+Filter condition: length_illspouse>0 & is.na(length_illspouse)==FALSE & nevermarried == 0 & divorced == 0
+Weighted mean of var: 18.4875146626663
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 69
+Formula: Random draw from variable length_illchild
+Filter condition: length_illchild>0 & is.na(length_illchild)==FALSE
+Weighted mean of var: 11.7378597147995
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 120
+Formula: Random draw from variable length_illparent
+Filter condition: length_illparent>0 & is.na(length_illparent)==FALSE
+Weighted mean of var: 19.511075017879
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 99
+Formula: Random draw from variable length_matdis
+Filter condition: length_matdis>0 & is.na(length_matdis)==FALSE & female == 1 & nochildren == 0
+Weighted mean of var: 66.285785624834
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 102
+Formula: Random draw from variable length_bond
+Filter condition: length_bond>0 & is.na(length_bond)==FALSE & nochildren == 0
+Weighted mean of var: 30.1891572638654
+------------------------------
+
+
+------------------------------
+Filtered FMLA Sample Size: 2852
+Formula: longerLeave ~ age + agesq + female
+Filter condition: TRUE
+------------------------------
+
+------------------------------
+Results
+------------------------------
+
+--------------------------------------------------------------------------------------------------------------
+Variable                         Population Total   Pop Total Standard Error   Pop Total CI                   
+-------------------------------- ------------------ -------------------------- -------------------------------
+Participated for own leave       443,090            11,034                     [ 421,464 , 464,716 ]          
+
+Participated for illspouse       7,140              1,468                      [ 4,262 , 10,018 ]             
+leave                                                                                                         
+
+Participated for illchild        27,700             3,639                      [ 20,568 , 34,832 ]            
+leave                                                                                                         
+
+Participated for illparent       37,660             2,759                      [ 32,252 , 43,068 ]            
+leave                                                                                                         
+
+Participated for matdis leave    207,010            8,328                      [ 190,687 , 223,333 ]          
+
+Participated for bond leave      53,420             3,875                      [ 45,826 , 61,014 ]            
+
+Participated for for own         631,030            13,161                     [ 605,234 , 656,826 ]          
+illness or maternal disability                                                                                
+leave                                                                                                         
+
+Participated for ill relative    124,290            5,778                      [ 112,964 , 135,616 ]          
+or child bonding leave                                                                                        
+
+Participated for any reason      726,080            14,026                     [ 698,589 , 753,571 ]          
+
+Benefits Received ($), for own   3,083,794,423      129,994,950                [ 2,829,004,320 ,              
+illness or maternal disability                                                 3,338,584,526 ]                
+leave                                                                                                         
+
+Benefits Received ($), for for   190,522,989        11,284,579                 [ 168,405,215 , 212,640,764 ]  
+ill relative or child bonding                                                                                 
+leave                                                                                                         
+
+Benefits Received ($), total     3,274,317,412      131,528,028                [ 3,016,522,477 ,              
+                                                                               3,532,112,347 ]                
+--------------------------------------------------------------------------------------------------------------
+
+
+------------------------------
+Runtime
+------------------------------
+14.52227

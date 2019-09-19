@@ -182,29 +182,33 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   # taken doctor
   d_fmla <- d_fmla %>% mutate(YNdoctor_take = ifelse(is.na(A20) == FALSE & A20 == 2,A11_2,A11_1),
                                                 doctor_take = ifelse(YNdoctor_take == 1,1,0))
+  d_fmla <- d_fmla %>% mutate(doctor_take = ifelse(is.na(YNdoctor_take), NA, doctor_take))
   
   # taken hospital
   d_fmla <- d_fmla %>% mutate(YNhospital_take = ifelse(is.na(A20) == FALSE & A20 == 2, A12_2, A12_1),
                                                 hospital_take = ifelse(YNhospital_take == 1, 1, 0))
+  d_fmla <- d_fmla %>% mutate(hospital_take = ifelse(is.na(YNhospital_take), NA, hospital_take))
   d_fmla <- d_fmla %>% mutate(hospital_take = ifelse(is.na(hospital_take) == TRUE & doctor_take == 0, 0, hospital_take))
   
   # need doctor
   d_fmla <- d_fmla %>% mutate(doctor_need = ifelse(B12_1 == 1, 1, 0))
+  d_fmla <- d_fmla %>% mutate(doctor_need = ifelse(is.na(B12_1), NA, doctor_need))
   
   # need hospital
   d_fmla <- d_fmla %>% mutate(hospital_need = ifelse(B13_1 == 1, 1, 0))
+  d_fmla <- d_fmla %>% mutate(hospital_need = ifelse(is.na(B13_1), NA, hospital_need))
   d_fmla <- d_fmla %>% mutate(hospital_need = ifelse(is.na(hospital_need) == TRUE & doctor_need == 0, 0, hospital_need))
   
   # taken or needed doctor or hospital for leave category
+  d_fmla <- d_fmla %>% mutate(doctor = pmax(doctor_need, doctor_take, na.rm=TRUE))
   d_fmla <- d_fmla %>% mutate(doctor1 = ifelse(is.na(LEAVE_CAT) == FALSE & LEAVE_CAT == 2, doctor_need, doctor_take))
-  
   d_fmla <- d_fmla %>% mutate(doctor2 = ifelse(is.na(LEAVE_CAT) == FALSE & (LEAVE_CAT == 2 | LEAVE_CAT == 4), doctor_need, doctor_take))  
   
+  d_fmla <- d_fmla %>% mutate(hospital = pmax(hospital_need, hospital_take, na.rm=TRUE))
   d_fmla <- d_fmla %>% mutate(hospital1 = ifelse(is.na(LEAVE_CAT) == FALSE & LEAVE_CAT == 2, hospital_need, hospital_take))
   d_fmla <- d_fmla %>% mutate(hospital2 = ifelse(is.na(LEAVE_CAT) == FALSE & (LEAVE_CAT == 2 | LEAVE_CAT == 4), hospital_need, hospital_take))  
   
   # length of leave for most recent leave
-  
   d_fmla <- d_fmla %>% mutate(length = ifelse(is.na(A20) == FALSE & A20 == 2, A19_2_CAT_rev, A19_1_CAT_rev))
   
   # 10/9, Luke: changing to be longest leave, regardless of if it is different from most recent leave or not
@@ -337,6 +341,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(take_matdis) == 1,0,take_matdis))
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(A5_1_CAT) == 1 & is.na(A5_2_CAT) == 1, NA, take_matdis))
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(take_matdis) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0, take_matdis))
+  d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(take_matdis) == 1 & GENDER_CAT == 1,0, take_matdis))
   
   d_fmla <- d_fmla %>% mutate(long_matdis = ifelse((A5_1_CAT == 21 & A11_1 == 1 & GENDER_CAT == 2) 
                                                                      | A5_1_CAT_rev == 32, 1, 0))
@@ -348,6 +353,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(need_matdis) == 1,0,need_matdis))
   d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(B6_1_CAT) == 1, NA, need_matdis))
   d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(need_matdis) == 1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0, need_matdis))
+  d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(need_matdis) == 1 & GENDER_CAT == 1,0, need_matdis))
   
   d_fmla <- d_fmla %>% mutate(type_matdis = ifelse((take_matdis == 1 | need_matdis == 1),1,0))
   d_fmla <- d_fmla %>% mutate(type_matdis = ifelse((is.na(take_matdis) == 1 | is.na(need_matdis) == 1),NA,type_matdis))
@@ -390,8 +396,8 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   d_fmla <- d_fmla %>% mutate(long_own = ifelse(is.na(long_own) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0,long_own))
   
   d_fmla <- d_fmla %>% mutate(need_own = ifelse(B6_1_CAT == 1,1,0))
-  # some more needers of this type are in the 2nd loop
-  d_fmla <- d_fmla %>% mutate(need_own = ifelse(B6_2_CAT == 1,1,need_own))
+  # # some more needers of this type are in the 2nd loop
+  # d_fmla <- d_fmla %>% mutate(need_own = ifelse(B6_2_CAT == 1,1,need_own))
   d_fmla <- d_fmla %>% mutate(need_own = ifelse(is.na(need_own)==1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0,need_own))
   
   d_fmla <- d_fmla %>% mutate(type_own = ifelse((take_own == 1 | need_own == 1),1,0))
@@ -408,8 +414,8 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   d_fmla <- d_fmla %>% mutate(long_illchild = ifelse(is.na(long_illchild) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0,long_illchild))
   
   d_fmla <- d_fmla %>% mutate(need_illchild = ifelse(B6_1_CAT == 11,1,0))
-  # some more needers of this type are in the 2nd loop
-  d_fmla <- d_fmla %>% mutate(need_illchild = ifelse(B6_2_CAT == 11,1,need_illchild))
+  # # some more needers of this type are in the 2nd loop
+  # d_fmla <- d_fmla %>% mutate(need_illchild = ifelse(B6_2_CAT == 11,1,need_illchild))
   d_fmla <- d_fmla %>% mutate(need_illchild = ifelse(is.na(need_illchild) == 1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0,need_illchild))
   
   d_fmla <- d_fmla %>% mutate(type_illchild = ifelse((take_illchild == 1 | need_illchild == 1),1,0))
@@ -421,12 +427,20 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   #ill spouse
   d_fmla <- d_fmla %>% mutate(take_illspouse = ifelse(reason_take == 12,1,0))
   d_fmla <- d_fmla %>% mutate(take_illspouse = ifelse(is.na(take_illspouse) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0,take_illspouse))
+  d_fmla <- d_fmla %>% mutate(take_illspouse = ifelse(is.na(take_illspouse) == 1 & (nevermarried == 1 | 
+                                                                                    separated == 1 |
+                                                                                    divorced == 1 |
+                                                                                    widowed == 1),0,take_illspouse))
   
   d_fmla <- d_fmla %>% mutate(long_illspouse = ifelse(long_reason == 12,1,0))
   d_fmla <- d_fmla %>% mutate(long_illspouse = ifelse(is.na(long_illspouse) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0,long_illspouse))
   
   d_fmla <- d_fmla %>% mutate(need_illspouse = ifelse(B6_1_CAT == 12,1,0))
   d_fmla <- d_fmla %>% mutate(need_illspouse = ifelse(is.na(need_illspouse) == 1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0,need_illspouse))
+  d_fmla <- d_fmla %>% mutate(need_illspouse = ifelse(is.na(need_illspouse) == 1 & (nevermarried == 1 | 
+                                                                                      separated == 1 |
+                                                                                      divorced == 1 |
+                                                                                      widowed == 1),0,need_illspouse))
   
   d_fmla <- d_fmla %>% mutate(type_illspouse = ifelse((take_illspouse == 1 | need_illspouse == 1),1,0))
   d_fmla <- d_fmla %>% mutate(type_illspouse = ifelse((is.na(take_illspouse) == 1 | is.na(need_illspouse) == 1),NA,type_illspouse))
@@ -461,7 +475,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   if (save_csv==TRUE) {
     write.csv(d_fmla, file = "fmla_clean_2012.csv", row.names = FALSE)  
   }
-  
+
   return(d_fmla)
 }
 

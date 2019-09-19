@@ -237,7 +237,7 @@ PAY_SCHEDULE <- function(d) {
 
 ELIGIBILITYRULES <- function(d, earnings=NULL, weeks=NULL, ann_hours=NULL, minsize=NULL, 
                              base_bene_level, week_bene_min, formula_prop_cuts=NULL, formula_value_cuts=NULL,
-                             formula_bene_levels=NULL, elig_rule_logic, FEDGOV, STATEGOV, LOCALGOV, SELFEMP) {
+                             formula_bene_levels=NULL, elig_rule_logic, FEDGOV, STATEGOV, LOCALGOV, SELFEMP,PRIVATE, exclusive_particip) {
   
   # ----- apply eligibility rules logic to calculate initial participation ---------------
   # TODO: This should be redone in a more simple fashion once the input expected from the GUI is hammered out.
@@ -275,6 +275,10 @@ ELIGIBILITYRULES <- function(d, earnings=NULL, weeks=NULL, ann_hours=NULL, minsi
     d <- d %>% mutate(eligworker = ifelse(COW==6 | COW==7,0,eligworker))
   }
   
+  # apply private sector employment filter
+  if (PRIVATE==FALSE) {
+    d <- d %>% mutate(eligworker = ifelse(COW==1 | COW==2,0,eligworker))
+  }
   
   # ------ benefit calc --------------
   # if formulary benefits are not specificed, everyone will simply receive base_bene_level
@@ -301,11 +305,15 @@ ELIGIBILITYRULES <- function(d, earnings=NULL, weeks=NULL, ann_hours=NULL, minsi
   # calculate general participation decision based on employer pay vs state program pay    
   # those who will receive more under the program will participate
   d["particip"] <- 0
-  d["particip"] <- ifelse(d[,"eligworker"]==1 & d[,"prop_pay"]<d[,"benefit_prop_temp"],1,0)  
+  if (exclusive_particip==TRUE){
+    d["particip"] <- ifelse(d[,"eligworker"]==1 & d[,"prop_pay"]<d[,"benefit_prop_temp"],1,0)    
   
-  # those who exhaust employer benefits before leave ends will participate
-  d["particip"] <- ifelse(d[,"eligworker"]==1 & !is.na(d[,'exhausted_by']),1,d[,"particip"])  
-  
+    # those who exhaust employer benefits before leave ends will participate
+    d["particip"] <- ifelse(d[,"eligworker"]==1 & !is.na(d[,'exhausted_by']),1,d[,"particip"])  
+  }
+  else {
+    d["particip"] <- ifelse(d[,"eligworker"]==1,1,0)    
+  }
   return(d)  
 }
 
@@ -582,7 +590,7 @@ EXTENDLEAVES <-function(d_train, d_test,wait_period, ext_base_effect,
 UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
                    illspouse_uptake, illchild_uptake, full_particip_needer, wait_period, 
                    maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
-                   maxlen_total, maxlen_DI, maxlen_PFL) {
+                   maxlen_total, maxlen_DI, maxlen_PFL,exclusive_particip) {
   
   # calculate uptake -> days of leave that program benefits are collected
   d['particip_length']=0
@@ -614,12 +622,15 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     
     # subtract days spent on employer benefits from those that exhausting employer benefits (received pay for some days of leave)
     # Also accounting for wait period here, as that can tick down as a person is still collecting employer benefits
-    d <- d %>% mutate(particip_length= ifelse(change_flag==1 & !is.na(exhausted_by),
-                                              ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
-                                                     particip_length - exhausted_by + wait_period, particip_length), particip_length))
-    d[plen_var] <- with(d, ifelse(change_flag==1 & !is.na(exhausted_by),
-                                  ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
-                                         get(plen_var) - exhausted_by + wait_period, get(plen_var)), get(plen_var)))
+    # only if exclusive participation is present though
+    if (exclusive_particip==TRUE) {
+      d <- d %>% mutate(particip_length= ifelse(change_flag==1 & !is.na(exhausted_by),
+                                                ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
+                                                       particip_length - exhausted_by + wait_period, particip_length), particip_length))
+      d[plen_var] <- with(d, ifelse(change_flag==1 & !is.na(exhausted_by),
+                                    ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
+                                           get(plen_var) - exhausted_by + wait_period, get(plen_var)), get(plen_var)))  
+    }
   }
   
   # make sure those with particip_length 0 are also particip 0

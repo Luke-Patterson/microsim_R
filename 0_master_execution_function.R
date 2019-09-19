@@ -16,6 +16,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
                               STATEGOV=FALSE,
                               LOCALGOV=FALSE,
                               SELFEMP=FALSE, 
+                              PRIVATE=TRUE,
                               impute_method="KNN1",
                               kval= 3,
                               makelog=TRUE,
@@ -37,6 +38,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
                               intra_impute = TRUE,
                               place_of_work = FALSE,
                               state = '',
+                              exclusive_particip=TRUE,
                               ext_base_effect=TRUE, extend_prob=0, extend_days=0, extend_prop=1,
                               maxlen_own =60, maxlen_matdis =60, maxlen_bond =60, maxlen_illparent =60, maxlen_illspouse =60, maxlen_illchild =60,
                               maxlen_PFL=maxlen_illparent+maxlen_illspouse+maxlen_illchild+maxlen_bond, maxlen_DI=maxlen_bond+maxlen_matdis,
@@ -260,7 +262,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   # INPUT: ACS file
   d_acs_imp <-ELIGIBILITYRULES(d_acs_imp, earnings, weeks, ann_hours, minsize, base_bene_level, week_bene_min,
                                formula_prop_cuts, formula_value_cuts, formula_bene_levels, elig_rule_logic,
-                               FEDGOV, STATEGOV, LOCALGOV, SELFEMP) 
+                               FEDGOV, STATEGOV, LOCALGOV, SELFEMP,PRIVATE,exclusive_particip) 
   # OUTPUT: ACS file with program eligibility and base program take-up indicators
   
   # Option to extend leaves under leave program 
@@ -273,7 +275,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   d_acs_imp <-UPTAKE(d_acs_imp, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
                      illspouse_uptake, illchild_uptake, full_particip_needer, wait_period,
                      maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
-                     maxlen_total,maxlen_DI,maxlen_PFL)
+                     maxlen_total,maxlen_DI,maxlen_PFL,exclusive_particip)
   # OUTPUT: ACS file with modified leave program variables based on user-specified program restrictions
   #         on maximum participation length and user-specified take-up rate assumptions
   
