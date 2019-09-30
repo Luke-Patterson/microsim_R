@@ -11,7 +11,7 @@
 # ----------master function that sets policy scenario, and calls functions to alter FMLA data to match policy scenario---------------------
 # see parameter documentation for details on arguments
 
-policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, useCSV=TRUE, saveDF=FALSE, saveCSV= FALSE,
+policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, useCSV=FALSE, saveDF=FALSE, saveCSV= FALSE,
                               FEDGOV=FALSE, 
                               STATEGOV=FALSE,
                               LOCALGOV=FALSE,
@@ -39,6 +39,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
                               place_of_work = FALSE,
                               state = '',
                               exclusive_particip=TRUE,
+                              ACS_master=FALSE,
                               ext_base_effect=TRUE, extend_prob=0, extend_days=0, extend_prop=1,
                               maxlen_own =60, maxlen_matdis =60, maxlen_bond =60, maxlen_illparent =60, maxlen_illspouse =60, maxlen_illchild =60,
                               maxlen_PFL=maxlen_illparent+maxlen_illspouse+maxlen_illchild+maxlen_bond, maxlen_DI=maxlen_bond+maxlen_matdis,
@@ -92,7 +93,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
     return("OK")
   }
   
-  global.libraries <- c('bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
+  global.libraries <- c('xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
                         'survey', 'class', 'dummies', 'varhandle', 'oglmx', 
                         'foreign', 'ggplot2', 'reshape2','e1071','pander','ridge')
   
@@ -112,21 +113,40 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   #========================================
   # 1. Cleaning 
   #========================================
+  #
+  if (ACS_master==TRUE) {
+    
+  }
   
   if (useCSV==TRUE) {
     # Load and clean csv's for FMLA, ACS, and CPS surveys
     
+    # read in FMLA
     d_fmla <- read.csv(paste0("./csv_inputs/", fmla_csv))
     #INPUT: Raw file for FMLA survey
     d_fmla <- clean_fmla(d_fmla, save_csv=FALSE)
     #OUTPUT: clean FMLA dataframe 
-
+    
+    # not fully implemented, can delete
+    # # time data load saver
+    # ptm <- proc.time()
+    # # read in ACS
+    # # load a sample to establish data types
+    # person_sample <- read.csv(paste0("./csv_inputs/",acs_person_csv),  
+    #                            stringsAsFactors=FALSE, header=T, nrows=20)  
+    # # save data types as class
+    # person_sample.colclass <- sapply(person_sample,class)
+    # 
+    # # load full ACS file with data types 
+    # d_acs_person <- tbl_df(read.csv(paste0("./csv_inputs/",acs_person_csv), 
+    #                                stringsAsFactors=FALSE, header=T, 
+    #                                colClasses=person_sample.colclass, comment.char="")) 
+    # print(proc.time()-ptm)
     d_acs_person <- read.csv(paste0("./csv_inputs/",acs_person_csv))
     d_acs_house <-  read.csv(paste0("./csv_inputs/",acs_house_csv))
     #INPUT: Raw files for ACS person, household levels  
     d_acs <- clean_acs(d_acs_person, d_acs_house, save_csv=FALSE)
     #OUTPUT: clean ACS dataframe of employed individuals 18 and over
-
     d_cps <- read.csv(paste0("./csv_inputs/",cps_csv))
     #INPUT: Raw file for CPS 
     d_cps <- clean_cps(d_cps)
@@ -145,8 +165,14 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   else { 
     # load files from a dataframe
      d_fmla <- readRDS(paste0("./R_dataframes/","d_fmla.rds"))
-     d_acs <- readRDS(paste0("./R_dataframes/","d_acs.rds"))
      d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
+     # load from residence ACS if state is a 
+     if (place_of_work==TRUE) {
+       d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_work.rds"))  
+     }
+     else {
+       d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_resid.rds"))  
+     }
   }
   
   if (saveDF==TRUE) {

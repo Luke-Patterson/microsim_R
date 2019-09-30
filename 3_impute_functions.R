@@ -32,6 +32,7 @@
   # 1E. ridge_class
   # 1F. random_forest
   # 1G. svm_impute - Gets bad results right now
+  # 1H. xG Boost
 
 # ============================ #
 # 1. impute_fmla_to_acs
@@ -170,6 +171,11 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
     d_acs <- svm_impute(d_test=d_acs, d_train=d_fmla, xvars=xvars, 
                            yvars=yvars, test_filts=filts, train_filts=filts, 
                            weights=weights)
+  }
+  if (impute_method=="xg_boost") {
+    d_acs <- xg_boost_impute(d_test=d_acs, d_train=d_fmla, xvars=xvars, 
+                        yvars=yvars, test_filts=filts, train_filts=filts, 
+                        weights=weights)
   }
   
   # This is a random leave assignment for comparison purposes.
@@ -1006,6 +1012,75 @@ svm_impute <- function(d_train, d_test, yvars, train_filts, test_filts, weights,
       #browser()
     }
 
+    # add imputed value to test data set
+    impute <- cbind(ftest['id'], impute)
+    d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+  }
+  return(d_test) 
+}
+
+# ================================ #
+# 1H. xG Boost
+# ================================ #
+# xG boost imputation function
+xg_boost_impute <- function(d_train, d_test, yvars, train_filts, test_filts, weights, xvars) {
+  # generate formulas for model
+  # need formula strings to look something like "take_own ~ age + agesq + male + ..." 
+  formulas <- c()
+  for (i in yvars) { 
+    formulas <- c(formulas, 
+                  paste(i, "~",  paste(xvars[1],'+', paste(xvars[2:length(xvars)] , collapse=" + "))))
+  }
+  names(formulas) <- names(yvars)
+  
+  # predict each yvar 
+  for (i in names(yvars)) {
+    
+    # generate model from training data 
+    ftrain <- d_train %>% filter(complete.cases(select(d_train, yvars[i], xvars))) %>% filter_(train_filts[i])  
+    # normalize training data to equally weight differences between variables
+    for (j in xvars) {
+      if (sum(ftrain[j])!=0 ){
+        ftrain[j] <- scale(ftrain[j],center=0,scale=max(ftrain[,j]))
+      }
+    } 
+    
+    # check for xvars with all identical values. need to not use xvar if all values are the same in training 
+    temp_xvars <- xvars
+    for (j in xvars) {
+      if (dim(table(ftrain[,j])) == 1) {
+        temp_xvars <- temp_xvars[!temp_xvars %in% j]
+        formulas[i] <- paste(yvars[i], "~",  paste(temp_xvars[1],'+', paste(temp_xvars[2:length(temp_xvars)] 
+                                                                            , collapse=" + ")))
+      }
+    } 
+    # normalize for test xvars
+    ftest <- d_test %>% filter(complete.cases(select(d_test, temp_xvars))) %>% filter_(test_filts[i]) 
+    for (j in temp_xvars) {
+      if (sum(ftest[j])!=0 ){
+        ftest[j] <- scale(ftest[j],center=0,scale=max(ftest[,j]))
+      }
+    }
+    
+    # set up training and testing data as xgb objects
+    mtrain <-as.matrix(ftrain[,c(temp_xvars,yvars[[i]])])
+    xgb_train <- xgb.DMatrix(data=mtrain[,temp_xvars],label=mtrain[,yvars[i]])
+    mtest <-as.matrix(ftest[,c(temp_xvars)])
+    xgb_test <- xgb.DMatrix(data=mtest[,temp_xvars])
+    
+    # create training model
+    model <- xgb.train(data = xgb_train,nrounds=2)
+
+    # apply model to test data 
+    impute <- as.data.frame(predict(object=model, newdata = xgb_test))
+    colnames(impute)[1] <- yvars[i]
+    
+    # if a binary variable, play wheel of fortune to assign value based on estimated probability
+    if (i != 'prop_pay') {
+      impute['rand'] <- runif(nrow(impute))
+      impute[yvars[[i]]] <- as.data.frame(ifelse(impute[1]>impute['rand'],1,0))
+    }
+    
     # add imputed value to test data set
     impute <- cbind(ftest['id'], impute)
     d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)

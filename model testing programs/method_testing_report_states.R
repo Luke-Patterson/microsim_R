@@ -10,7 +10,7 @@
   
   # sample master execution function for testing code
   source("0_master_execution_function.R")
-  methods <- c('Naive_Bayes','random','KNN1','logit', 'KNN_multi','random_forest','ridge_class')
+  methods <- c('Naive_Bayes','random','KNN1','logit', 'KNN_multi','random_forest','ridge_class','xg_boost')
   
   for (meth in methods) {
   
@@ -37,9 +37,10 @@
                               dependent_allow = 10,
                               own_uptake=.95, matdis_uptake=.95, bond_uptake=.75, illparent_uptake=.1,
                               illspouse_uptake=.2, illchild_uptake=.2,
+                              exclusive_particip=FALSE,
                               maxlen_PFL= 20, maxlen_DI=150, maxlen_own =150, maxlen_matdis =150, maxlen_bond =20, maxlen_illparent=20, 
-                              maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150, earnings=11520,output=paste0("RI_",meth,"_method_alt"),
-                              output_stats=c('state_compar'),  random_seed=123)
+                              maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150, earnings=11520,output=paste0("RI_",meth,"_method_alt_no_exclude"),
+                              output_stats=c('state_compar_no_exclude'),  random_seed=123)
   
   timeend <<- Sys.time()
   print(timeend - timestart)
