@@ -97,7 +97,15 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
   for (i in predict) {
     count=count+1
     if (!is.null(i)) {
-      d_test <- merge(i, d_test, by="id",all.y=TRUE)  
+      # old merge code, caused memory issues. using match instead
+      #d_test <- merge(i, d_test, by="id",all.y=TRUE)  
+      for (j in names(i)) {
+        if (i %in% names(d_test)==FALSE){
+          d_test[j] <- i[match(d_test$id, i$id), j]    
+        }
+      }
+      
+      
     }
     else {
       d_test[paste0('length_',leave_types[count])] <- 0
@@ -470,7 +478,15 @@ EXTENDLEAVES <-function(d_train, d_test,wait_period, ext_base_effect,
     # filter conditions, weight to use
     d_filt <- runLogitEstimate(d_train=d_train, d_test=d_test, formula=formula, test_filt=filt, 
                                train_filt=filt, weight=weight, varname='longer_leave', create_dummies=TRUE)
-    d_test <- merge(d_filt, d_test, by='id', all.y=TRUE)
+    
+    # old merge code, caused memory issues. using match instead
+    #d_test <- merge(d_filt, d_test, by='id', all.y=TRUE)
+    for (i in names(d_filt)) {
+      if (i %in% names(d_test)==FALSE){
+        d_test[i] <- d_filt[match(d_test$id, d_filt$id), i]    
+      }
+    }
+    
     # OUTPUT: ACS data with imputed column indicating those taking a longer leave.
     
     # Following ACM implementation:

@@ -120,7 +120,13 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
     # OUTPUTS: list of data sets for each leave taking/other variables requiring imputation. 
    # merge imputed values with acs data
     for (i in impute) {
-      d_acs <- merge(i, d_acs, by="id",all.y=TRUE)
+      # old merge code, caused memory issues. using match instead
+      #d_test <- merge(d_filt, d_test, by='id', all.y=TRUE)
+      for (j in names(i)) {
+        if (j %in% names(d_acs)==FALSE){
+          d_acs[j] <- i[match(d_acs$id, i$id), j]    
+        }
+      }
     }  
     
     # save output for reference when making other methods
@@ -143,8 +149,14 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
     # OUTPUTS: list of data sets for each leave taking/other variables requiring imputation. 
     # merge imputed values with acs data
     for (i in impute) {
-      d_acs <- merge(i, d_acs, by="id",all.y=TRUE)
-    }  
+      # old merge code, caused memory issues. using match instead
+      #d_acs <- merge(i, d_acs, by="id",all.y=TRUE)
+      for (j in names(i)) {
+        if (j %in% names(d_acs)==FALSE){
+          d_acs[j] <- i[match(d_acs$id, i$id), j]    
+        }
+      }
+    }
     
   }
   if (impute_method=="Naive_Bayes") {
@@ -344,8 +356,15 @@ logit_leave_method <- function(d_test, d_train, xvars=NULL, yvars, test_filts, t
                        SIMPLIFY = FALSE)
 
   # merge imputed values into single data set
+  
   for (i in sets) {
-    d_test <- merge(i, d_test, by="id",all.y=TRUE)
+    # old merge code, caused memory issues. using match instead
+    # d_test <- merge(i, d_test, by="id",all.y=TRUE)
+    for (j in names(i)) {
+      if (j %in% names(d_test)==FALSE){
+        d_test[j] <- i[match(d_test$id, i$id), j]    
+      }
+    }
     # set missing probability = 0
     d_test[is.na(d_test[colnames(i[2])]), colnames(i[2])] <- 0
   } 
@@ -361,8 +380,15 @@ logit_leave_method <- function(d_test, d_train, xvars=NULL, yvars, test_filts, t
   # Do an ordinal logit imputation for prop_pay
   d_filt <- runOrdinalEstimate(d_train=d_train,d_test=d_test, formula=formula,
                                test_filt="TRUE", train_filt="TRUE", varname='prop_pay')
-  d_test <- merge(d_filt, d_test, by='id', all.y=TRUE)
   
+  # old merge code caused memory issues. Using match instead.
+  #d_test <- merge(d_filt, d_test, by='id', all.y=TRUE)
+  for (i in names(d_filt)) {
+    if (i %in% names(d_test)==FALSE){
+      d_test[i] <- d_filt[match(d_test$id, d_filt$id), i]    
+    }
+  }
+
   # replace factor levels with prop_pay proportions
   d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 1, 0, prop_pay))
   d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 2, .125, prop_pay))
@@ -549,7 +575,16 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
       # the unconstrained distribution of training leave lengths
       temp_train <- train %>% filter(resp_len == 0)
       temp_test <- test %>% filter(resp_len == 1)
-      temp_test <- merge(temp_test, est_df, by='id', all.x=TRUE)
+      
+      # old merge code caused memory issues. using match instead
+      #temp_test <- merge(temp_test, est_df, by='id', all.x=TRUE)
+      for (i in names(est_df)) {
+        if (i %in% names(temp_test)==FALSE){
+          temp_test[i] <- est_df[match(temp_test$id, est_df$id), i]    
+        }
+      }
+      
+      
       # if these dataframes are not empty, we find the counterfactual lengths
       if (nrow(temp_test)!= 0 & nrow(temp_train)!= 0 ) {
         # mean method - find proportional difference of resp=1 and resp=0 mean, and multiply 
@@ -581,7 +616,10 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         }
         # adjust squo lengths by factor to get counterfact lengths for resp_len == 1
         temp_test[yvar] <- data.frame(unlist(apply(temp_test, 1, train_samp_cfact)))
-        est_df <- merge(temp_test[c('id', yvar)], est_df, by='id', all.y=TRUE)  
+        
+        # old merge code caused memory issues. using match instead
+        #est_df <- merge(temp_test[c('id', yvar)], est_df, by='id', all.y=TRUE)  
+        est_df[yvar] <- est_df[match(temp_test$id, est_df$id), yvar]    
         
         # for the rest, resp_len = 0 and so leave length does not respond to presence or absence of program, 
         # so that variable remains the same
@@ -786,8 +824,10 @@ Naive_Bayes <- function(d_train, d_test, yvars, train_filts, test_filts, weights
     
     # add imputed value to test data set
     wanbia_imp <- cbind(w_test_ids['id'], wanbia_imp)
-
-    d_test <- merge(d_test, wanbia_imp[c('id', yvars[[i]])], by='id', all.x = TRUE)
+    # old merge code, was causing issues. Using match instead.
+    #d_test <- merge(d_test, wanbia_imp[c('id', yvars[i])], by='id', all.x = TRUE)
+    d_test[yvars[[i]]] <- wanbia_imp[match(d_test$id, wanbia_imp$id), yvars[[i]]]
+    
   }
   return(d_test)
 }
@@ -853,7 +893,9 @@ ridge_class <- function(d_train, d_test, yvars, train_filts, test_filts, weights
       impute['rand'] <- runif(nrow(impute))
       impute[yvars[i]] <- with(impute, ifelse(prob >= rand, 1, 0))
       impute <- cbind(ftest['id'], impute)
-      d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+      # old merge code, was causing issues. Using match instead.
+      #d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+      d_test[yvars[[i]]] <- impute[match(d_test$id, impute$id), yvars[[i]]]
     }
     # ordinal ridge regression for prop_pay
     # can't find a package that does an ordinal implementation, so writing one from scratch here
@@ -954,8 +996,10 @@ random_forest <- function(d_train, d_test, yvars, train_filts, test_filts, weigh
     
     # add imputed value to test data set
     impute <- cbind(ftest['id'], impute)
+    # old merge code, was causing issues. Using match instead.
+    #d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+    d_test[yvars[[i]]] <- impute[match(d_test$id, impute$id), yvars[[i]]]
     
-    d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
   }
   return(d_test) 
 }
@@ -1014,7 +1058,10 @@ svm_impute <- function(d_train, d_test, yvars, train_filts, test_filts, weights,
 
     # add imputed value to test data set
     impute <- cbind(ftest['id'], impute)
-    d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+    # old merge code, caused memory issues. using match instead
+    #d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+    d_test[yvars[[i]]] <- impute[match(d_test$id, impute$id), yvars[[i]]]
+    
   }
   return(d_test) 
 }
@@ -1083,7 +1130,10 @@ xg_boost_impute <- function(d_train, d_test, yvars, train_filts, test_filts, wei
     
     # add imputed value to test data set
     impute <- cbind(ftest['id'], impute)
-    d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+    
+    # old merge code, caused memory issues. using match instead
+    #d_test <- merge(d_test, impute[c('id', yvars[i])], by='id', all.x = TRUE)
+    d_test[yvars[[i]]] <- impute[match(d_test$id, impute$id), yvars[[i]]]
   }
   return(d_test) 
 }
