@@ -11,7 +11,7 @@
 # ----------master function that sets policy scenario, and calls functions to alter FMLA data to match policy scenario---------------------
 # see parameter documentation for details on arguments
 
-policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, useCSV=FALSE, saveDF=FALSE, saveCSV= FALSE,
+policy_simulation <- function(saveCSV=FALSE,
                               FEDGOV=FALSE, 
                               STATEGOV=FALSE,
                               LOCALGOV=FALSE,
@@ -23,8 +23,7 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
                               xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
                                          'age',"agesq", "ltHS", "someCol", "BA", "GradSch", "black", 
                                          "other", "asian",'native', "hisp","nochildren",'faminc','coveligd'),
-                              # should think about how to add faminc to xvars
-                              # xvars weight parameter - how to weight xvars for those methods that it is relevant for [NEED TO ADD to PARAM DICT]
+
                               # default is 1's for everything
                               xvar_wgts = rep(1,length(xvars)),
                               base_bene_level=1, topoff_rate=0, topoff_minlength=0, sample_prop=NULL, sample_num=NULL,
@@ -39,7 +38,6 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
                               place_of_work = FALSE,
                               state = '',
                               exclusive_particip=TRUE,
-                              ACS_master=FALSE,
                               ext_base_effect=TRUE, extend_prob=0, extend_days=0, extend_prop=1,
                               maxlen_own =60, maxlen_matdis =60, maxlen_bond =60, maxlen_illparent =60, maxlen_illspouse =60, maxlen_illchild =60,
                               maxlen_PFL=maxlen_illparent+maxlen_illspouse+maxlen_illchild+maxlen_bond, maxlen_DI=maxlen_bond+maxlen_matdis,
@@ -113,75 +111,23 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   #========================================
   # 1. Cleaning 
   #========================================
-  #
-  if (ACS_master==TRUE) {
-    
-  }
-  
-  if (useCSV==TRUE) {
-    # Load and clean csv's for FMLA, ACS, and CPS surveys
-    
-    # read in FMLA
-    d_fmla <- read.csv(paste0("./csv_inputs/", fmla_csv))
-    #INPUT: Raw file for FMLA survey
-    d_fmla <- clean_fmla(d_fmla, save_csv=FALSE)
-    #OUTPUT: clean FMLA dataframe 
-    
-    # not fully implemented, can delete
-    # # time data load saver
-    # ptm <- proc.time()
-    # # read in ACS
-    # # load a sample to establish data types
-    # person_sample <- read.csv(paste0("./csv_inputs/",acs_person_csv),  
-    #                            stringsAsFactors=FALSE, header=T, nrows=20)  
-    # # save data types as class
-    # person_sample.colclass <- sapply(person_sample,class)
-    # 
-    # # load full ACS file with data types 
-    # d_acs_person <- tbl_df(read.csv(paste0("./csv_inputs/",acs_person_csv), 
-    #                                stringsAsFactors=FALSE, header=T, 
-    #                                colClasses=person_sample.colclass, comment.char="")) 
-    # print(proc.time()-ptm)
-    d_acs_person <- read.csv(paste0("./csv_inputs/",acs_person_csv))
-    d_acs_house <-  read.csv(paste0("./csv_inputs/",acs_house_csv))
-    #INPUT: Raw files for ACS person, household levels  
-    d_acs <- clean_acs(d_acs_person, d_acs_house, save_csv=FALSE)
-    #OUTPUT: clean ACS dataframe of employed individuals 18 and over
-    d_cps <- read.csv(paste0("./csv_inputs/",cps_csv))
-    #INPUT: Raw file for CPS 
-    d_cps <- clean_cps(d_cps)
-    #OUTPUT: Cleaned CPS dataframe
-    
-    
-    #-----CPS to ACS Imputation-----
-    # Impute hourly worker, weeks worked, and firm size variables from CPS into ACS. 
-    # These are needed for leave program eligibilitly determination
-    
-    # INPUT: cleaned acs, cps files
-    d_acs <- impute_cps_to_acs(d_acs, d_cps)
-    # OUTPUT: cleaned acs with imputed weeks worked, employer size, and hourly worker status
-  }
-  
-  else { 
-    # load files from a dataframe
-     d_fmla <- readRDS(paste0("./R_dataframes/","d_fmla.rds"))
-     d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
-     # load from residence ACS if state is a 
-     if (place_of_work==TRUE) {
-       d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_work.rds"))  
-     }
-     else {
-       d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_resid.rds"))  
-     }
-  }
-  
-  if (saveDF==TRUE) {
-    #save cleaned sets to dataframe
-    saveRDS(d_fmla,file=paste0("./R_dataframes/","d_fmla.rds"))
-    saveRDS(d_acs,file=paste0("./R_dataframes/","d_acs.rds"))
-    saveRDS(d_cps,file=paste0("./R_dataframes/","d_cps.rds"))
-    return()
-  }
+  # load files from a dataframe
+   d_fmla <- readRDS(paste0("./R_dataframes/","d_fmla.rds"))
+   d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
+   # load from residence ACS if state is a 
+   if (place_of_work==TRUE) {
+     d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_work.rds"))  
+   }
+   else {
+     d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_resid.rds"))  
+   }
+
+  #-----CPS to ACS Imputation-----
+  # Impute hourly worker, weeks worked, and firm size variables from CPS into ACS. 
+  # These are needed for leave program eligibilitly determination
+  # INPUT: cleaned acs, cps files
+  d_acs <- impute_cps_to_acs(d_acs, d_cps)
+  # OUTPUT: cleaned acs with imputed weeks worked, employer size, and hourly worker status
   
   # sample ACS
   # user option to sample ACS data
@@ -194,7 +140,6 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   if (!is.null(sample_prop) & !is.null(sample_num)) {
     d_acs <- sample_acs(d_acs, sample_prop=sample_prop, sample_num=sample_num)  
   }
-
   #========================================
   # 2. Pre-imputation 
   #========================================
@@ -232,7 +177,6 @@ policy_simulation <- function(fmla_csv, acs_house_csv, acs_person_csv, cps_csv, 
   # INPUT: ACS Data
   d_acs <- acs_filtering(d_acs, weightfactor, place_of_work, state)
   # OUTPUT: Filtered ACS data
-
   # default is just simple nearest neighbor, K=1 
   # This is the big beast of getting leave behavior into the ACS.
   # INPUT: cleaned acs/fmla data, method for imputation, dependent variables 

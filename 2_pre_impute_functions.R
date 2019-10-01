@@ -188,14 +188,14 @@ acs_filtering <- function(d, weightfactor, place_of_work, state) {
       # merge in state abbreviations
       state_codes <- read.csv(paste0("./csv_inputs/ACS_state_codes.csv"))
       d <- merge(d,state_codes, by="ST",all.x=TRUE)  
-      d <- d %>% filter(state_abbr==state)
+      d <- d %>% filter(state_name==state)
     }
     if (place_of_work==TRUE) {
       # merge in state abbreviations
       state_codes <- read.csv(paste0("./csv_inputs/ACS_state_codes.csv"))
       state_codes["POWSP"] <- state_codes["ST"]  
-      d <- merge(d,state_codes, by="POWSP",all.x=TRUE)  
-      d <- d %>% filter(state_abbr==state)
+      d <- merge(d,state_codes, by="POWSP",all.x=TRUE)
+      d <- d %>% filter(state_name==state)
     }
   }
 

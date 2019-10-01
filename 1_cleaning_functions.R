@@ -28,9 +28,7 @@
 # 1.clean_fmla
 # ============================ #
 
-
 clean_fmla <-function(d_fmla, save_csv=FALSE) {
-  
   
   # --------------------------------------------------------------------
   # demographic characteristics
@@ -928,7 +926,7 @@ impute_cps_to_acs <- function(d_acs, d_cps){
   weight = "marsupwt"
   d_filt <- runOrdinalEstimate(d_train=d_cps,d_test=d_acs, formula=formula,test_filt=filt,
                                train_filt=filt, varname=varname)
-  d_acs <- merge(d_filt, d_acs, by='id', all.y=TRUE)
+  d_acs <- cbind(d_acs, d_filt['emp_size'])
   
   # then do random draw within assigned size range
   d_acs <- d_acs %>% mutate(temp_size=ifelse(emp_size==1,sample(1:9, nrow(d_acs), replace=T),0)) %>%

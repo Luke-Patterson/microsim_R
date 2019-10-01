@@ -1,7 +1,8 @@
+
 #rm(list=ls())
 cat("\014")  
-basepath <- rprojroot::find_rstudio_root_file()
-setwd(basepath)
+#basepath <- rprojroot::find_rstudio_root_file()
+#setwd(basepath)
 options(error=recover)
 #options(error=NULL)
 
@@ -21,12 +22,8 @@ source("0_master_execution_function.R")
 
 # subsequent times, can run from saved r data frames to save time.
 timestart <<- Sys.time()
-d <- policy_simulation(fmla_csv="fmla_2012_employee_restrict_puf.csv",
-                  acs_person_csv="ss16pri_short.csv",
-                  acs_house_csv="ss16hri_short.csv",
-                  cps_csv="CPS2014extract.csv",
-                  useCSV=FALSE,
-                  saveDF=FALSE,
+d <- policy_simulation(
+                  saveCSV=TRUE,
                   xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
                           'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
                           "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
@@ -34,8 +31,7 @@ d <- policy_simulation(fmla_csv="fmla_2012_employee_restrict_puf.csv",
                   impute_method="logit",
 		              makelog = FALSE,
                   sample_prop=1,
-		              state='Rhode Island',
-		              
+		              state='Wyoming',
 		              SELFEMP=FALSE,
                   ext_resp_len = FALSE, len_method = 'mean', sens_var = 'unaffordable', progalt_post_or_pre ='post',
 		              ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
