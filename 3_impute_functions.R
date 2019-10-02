@@ -619,7 +619,8 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         
         # old merge code caused memory issues. using match instead
         #est_df <- merge(temp_test[c('id', yvar)], est_df, by='id', all.y=TRUE)  
-        est_df[yvar] <- est_df[match(temp_test$id, est_df$id), yvar]    
+        
+        est_df[yvar] <- temp_test[match(est_df$id,temp_test$id), yvar]    
         
         # for the rest, resp_len = 0 and so leave length does not respond to presence or absence of program, 
         # so that variable remains the same

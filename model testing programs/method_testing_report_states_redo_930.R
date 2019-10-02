@@ -44,37 +44,38 @@
   timeend <<- Sys.time()
   print(timeend - timestart)
   }
-  for (meth in methods) {  
-    #=================================
-    #California
-    #=================================
+  #=================================
+  #California
+  #=================================
+  
+  #for (meth in methods) {  
     # clear up memory
-    rm(list=ls()[ls()!='methods' & ls()!='policy_simulation' & ls()!='meth'])
-    start_time <- Sys.time()
-    policy_simulation(state='California',
-                      makelog=TRUE,
-                      xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
-                              'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
-                              "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
-                      base_bene_level=.55,
-                      impute_method = meth,
-                      sample_prop = .1,
-                      place_of_work = TRUE,
-                      exclusive_particip = FALSE,
-                      ext_resp_len = TRUE, sens_var = 'resp_len', progalt_post_or_pre ='post',
-                      ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
-                      bene_effect=TRUE, full_particip_needer=TRUE, wait_period=5, clone_factor=0, week_bene_cap=1216,
-                      week_bene_min=50, dependent_allow = 10,
-                      own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
-                      illspouse_uptake=.25, illchild_uptake=.25,
-                      maxlen_own =260, maxlen_matdis =260, maxlen_bond =30, maxlen_illparent =30, 
-                      maxlen_PFL= 30, maxlen_DI=260, maxlen_total=260,
-                      maxlen_illspouse =30, maxlen_illchild =30,earnings=300, output=paste0("CA_",meth,"_method_redo"),
-                      output_stats=c('state_compar'),  random_seed=123)
-    
-    end_time <- Sys.time()
-    print(end_time - start_time)
-  }
+  #   rm(list=ls()[ls()!='methods' & ls()!='policy_simulation' & ls()!='meth'])
+  #   start_time <- Sys.time()
+  #   policy_simulation(state='California',
+  #                     makelog=TRUE,
+  #                     xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
+  #                             'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
+  #                             "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
+  #                     base_bene_level=.55,
+  #                     impute_method = meth,
+  #                     sample_prop = .1,
+  #                     place_of_work = TRUE,
+  #                     exclusive_particip = FALSE,
+  #                     ext_resp_len = TRUE, sens_var = 'resp_len', progalt_post_or_pre ='post',
+  #                     ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
+  #                     bene_effect=TRUE, full_particip_needer=TRUE, wait_period=5, clone_factor=0, week_bene_cap=1216,
+  #                     week_bene_min=50, dependent_allow = 10,
+  #                     own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
+  #                     illspouse_uptake=.25, illchild_uptake=.25,
+  #                     maxlen_own =260, maxlen_matdis =260, maxlen_bond =30, maxlen_illparent =30, 
+  #                     maxlen_PFL= 30, maxlen_DI=260, maxlen_total=260,
+  #                     maxlen_illspouse =30, maxlen_illchild =30,earnings=300, output=paste0("CA_",meth,"_method_redo"),
+  #                     output_stats=c('state_compar'),  random_seed=123)
+  #   
+  #   end_time <- Sys.time()
+  #   print(end_time - start_time)
+  # }
   #=================================
   # New Jersey
   #=================================
