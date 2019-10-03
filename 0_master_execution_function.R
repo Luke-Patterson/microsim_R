@@ -45,7 +45,8 @@ policy_simulation <- function(saveCSV=FALSE,
                               fmla_protect=TRUE, earnings=NULL, weeks= NULL, ann_hours=NULL, minsize= NULL, 
                               elig_rule_logic= '(earnings & weeks & ann_hours & minsize)',
                               formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_bene_levels=NULL,
-                              weightfactor=1, output=NULL, output_stats=NULL, random_seed=123) {
+                              weightfactor=1, output=NULL, output_stats=NULL, random_seed=123,
+                              SMOTE=FALSE) {
   
   
   ####################################
@@ -91,7 +92,7 @@ policy_simulation <- function(saveCSV=FALSE,
     return("OK")
   }
   
-  global.libraries <- c('xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
+  global.libraries <- c('DMwR','xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
                         'survey', 'class', 'dummies', 'varhandle', 'oglmx', 
                         'foreign', 'ggplot2', 'reshape2','e1071','pander','ridge')
   
@@ -162,6 +163,11 @@ policy_simulation <- function(saveCSV=FALSE,
   d_fmla <- impute_intra_fmla(d_fmla, intra_impute)
 
   # OUTPUT: FMLA data with modified take_ and need_ vars for those with additional leaves
+  
+  # option to apply SMOTE to d_fmla data set to correct for class imbalance of each leave type
+  if (SMOTE == TRUE) {
+    d_fmla <- SMOTE(d_fmla, xvars)
+  }
   
   # adjust for program's base behavioral effect on leave taking
   # INPUT: FMLA data

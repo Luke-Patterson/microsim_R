@@ -927,7 +927,10 @@ ridge_class <- function(d_train, d_test, yvars, train_filts, test_filts, weights
         impute <- as.data.frame(as.matrix(cbind(constant=1,ftest[temp_xvars])) %*% coef(model))
         colnames(impute) <- j
         impute <- cbind(ftest['id'], impute)
-        d_test <- merge(d_test, impute[c('id', j)], by='id', all.x = TRUE)
+        
+        # old merge code, was causing issues. Using match instead.
+        #d_test <- merge(d_test, impute[c('id', j)], by='id', all.x = TRUE)
+        d_test[j] <- impute[match(d_test$id, impute$id), j]
       }
       # normalize val probabilities to sum to 1
       d_test['total'] = rowSums(d_test[var_vals])

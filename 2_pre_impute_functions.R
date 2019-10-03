@@ -21,6 +21,7 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 1. impute_intra_fmla
   # 1A. runLogitEstimate - see 3_impute_functions.R, function 1Ba
+# 2. SMOTE 
 # 3. acs_filtering
 
 # ============================ #
@@ -168,6 +169,25 @@ impute_intra_fmla <- function(d_fmla, intra_impute) {
   d_fmla <- d_fmla %>% mutate(taker=ifelse(taker>=1, 1, 0))
   d_fmla <- d_fmla %>% mutate(needer=ifelse(needer>=1, 1, 0))
   
+  return(d_fmla)
+}
+
+# ============================ #
+# 2. SMOTE
+# ============================ #
+# function to apply SMOTE to FMLA data
+SMOTE <- function(d_fmla, xvars) {
+  # iterate through all need and take vars for each leave type
+  for (i in leave_types) {
+    for (j in c('take_', 'need_')){
+      yvar= paste0(j,i)
+      formula <- paste(yvar, "~",  paste(xvars[1],'+', paste(xvars[2:length(xvars)], collapse=" + ")))
+      d_smote <- SMOTE(formula,d_fmla)
+      browser()
+    }
+  }
+  
+  browser()
   return(d_fmla)
 }
 

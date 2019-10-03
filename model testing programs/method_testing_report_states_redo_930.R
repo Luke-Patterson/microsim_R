@@ -13,7 +13,7 @@
   
   # sample master execution function for testing code
   source("0_master_execution_function.R")
-  methods <- c('Naive_Bayes','random','KNN1','logit', 'KNN_multi','random_forest','ridge_class','xg_boost')
+  methods <- c('Naive_Bayes','random','KNN1','logit','random_forest','ridge_class','xg_boost') # 'KNN_multi's
   
   for (meth in methods) {
     print(meth)
@@ -29,16 +29,16 @@
                                       "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
                               base_bene_level=.6,
                               impute_method=meth,
-                              place_of_work = TRUE,
-                              exclusive_particip = FALSE,
-                              ext_resp_len = TRUE, sens_var = 'resp_len', progalt_post_or_pre ='post',
+                              place_of_work = FALSE,
+                              exclusive_particip = TRUE,
+                              ext_resp_len = TRUE, 
                               ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
                               bene_effect=TRUE, wait_period=5, full_particip_needer=TRUE, clone_factor=0, week_bene_cap=795, week_bene_min=89,
                               dependent_allow = 10,
-                              own_uptake=.4, matdis_uptake=.95, bond_uptake=.75, illparent_uptake=.1,
-                              illspouse_uptake=.2, illchild_uptake=.2,
+                              own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
+                              illspouse_uptake=.25, illchild_uptake=.25,
                               maxlen_PFL= 20, maxlen_DI=150, maxlen_own =150, maxlen_matdis =150, maxlen_bond =20, maxlen_illparent=20, 
-                              maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150, earnings=11520,output=paste0("RI_",meth,"_method_alt_redo"),
+                              maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150, earnings=11520,output=paste0("RI_",meth,"_method_resid_redo"),
                               output_stats=c('state_compar'),  random_seed=123)
   
   timeend <<- Sys.time()
@@ -61,17 +61,16 @@
   #                     impute_method = meth,
   #                     sample_prop = .1,
   #                     place_of_work = TRUE,
-  #                     exclusive_particip = FALSE,
-  #                     ext_resp_len = TRUE, sens_var = 'resp_len', progalt_post_or_pre ='post',
-  #                     ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
-  #                     bene_effect=TRUE, full_particip_needer=TRUE, wait_period=5, clone_factor=0, week_bene_cap=1216,
-  #                     week_bene_min=50, dependent_allow = 10,
-  #                     own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
-  #                     illspouse_uptake=.25, illchild_uptake=.25,
-  #                     maxlen_own =260, maxlen_matdis =260, maxlen_bond =30, maxlen_illparent =30, 
-  #                     maxlen_PFL= 30, maxlen_DI=260, maxlen_total=260,
-  #                     maxlen_illspouse =30, maxlen_illchild =30,earnings=300, output=paste0("CA_",meth,"_method_redo"),
-  #                     output_stats=c('state_compar'),  random_seed=123)
+  #                     exclusive_particip = FALSE
+                        # ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
+                        # bene_effect=TRUE, full_particip_needer=TRUE, wait_period=5, clone_factor=0, week_bene_cap=1216,
+                        # week_bene_min=50, dependent_allow = 10,
+                        # own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
+                        # illspouse_uptake=.25, illchild_uptake=.25,
+                        # maxlen_own =260, maxlen_matdis =260, maxlen_bond =30, maxlen_illparent =30, 
+                        # maxlen_PFL= 30, maxlen_DI=260, maxlen_total=260,
+                        # maxlen_illspouse =30, maxlen_illchild =30,earnings=300, output=paste0("CA_",meth,"_method_POW_alt"),
+                        # output_stats=c('state_compar'),  random_seed=123)
   #   
   #   end_time <- Sys.time()
   #   print(end_time - start_time)
@@ -94,17 +93,17 @@ for (meth in methods) {
                                     "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
                             base_bene_level=.66,
                             impute_method = meth,
-                            place_of_work = TRUE,
-                            exclusive_particip = FALSE,
-                            ext_resp_len = TRUE, sens_var = 'resp_len', progalt_post_or_pre ='post',
+                            place_of_work = FALSE,
+                            exclusive_particip = TRUE,
+                            ext_resp_len = TRUE,
                             ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=0, topoff_minlength=10,
                             bene_effect=TRUE,  wait_period=5, clone_factor=0, week_bene_cap=594,
-                            own_uptake=.4, matdis_uptake=.95, bond_uptake=.75, illparent_uptake=.1,
-                            illspouse_uptake=.2, illchild_uptake=.2,
+                            own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
+                            illspouse_uptake=.25, illchild_uptake=.25,
                             own_elig_adj=.7, matdis_elig_adj=.7,
                             maxlen_own =130, maxlen_matdis =130, maxlen_bond =30, maxlen_illparent =30, 
                             maxlen_PFL= 30, maxlen_DI=130, maxlen_total=130,
-                            maxlen_illspouse =30, maxlen_illchild =30,earnings=8400,output=paste0("NJ_",meth,"_method_redo"), output_stats=c('state_compar'), random_seed=123)
+                            maxlen_illspouse =30, maxlen_illchild =30,earnings=8400,output=paste0("NJ_",meth,"_method_resid_redo"), output_stats=c('state_compar'), random_seed=123)
   
   
   end_time <- Sys.time()
