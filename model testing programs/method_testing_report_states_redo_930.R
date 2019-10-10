@@ -22,7 +22,7 @@
   #=================================
   
     timestart <<- Sys.time()
-    d_ri <- policy_simulation(state='Rhode Island',
+    d_ri <- policy_simulation(state='RI',
                               makelog=TRUE,
                               xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
                                       'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
@@ -35,8 +35,8 @@
                               ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
                               bene_effect=TRUE, wait_period=5, full_particip_needer=TRUE, clone_factor=0, week_bene_cap=795, week_bene_min=89,
                               dependent_allow = 10,
-                              own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
-                              illspouse_uptake=.25, illchild_uptake=.25,
+                              own_uptake=.95, matdis_uptake=.95, bond_uptake=.75, illparent_uptake=.1,
+                              illspouse_uptake=.2, illchild_uptake=.2,
                               maxlen_PFL= 20, maxlen_DI=150, maxlen_own =150, maxlen_matdis =150, maxlen_bond =20, maxlen_illparent=20, 
                               maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150, earnings=11520,output=paste0("RI_",meth,"_method_resid_redo"),
                               output_stats=c('state_compar'),  random_seed=123)
@@ -52,7 +52,7 @@
     # clear up memory
   #   rm(list=ls()[ls()!='methods' & ls()!='policy_simulation' & ls()!='meth'])
   #   start_time <- Sys.time()
-  #   policy_simulation(state='California',
+  #   policy_simulation(state='CA',
   #                     makelog=TRUE,
   #                     xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
   #                             'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
@@ -83,29 +83,29 @@
   #http://lims.dccouncil.us/Download/34613/B21-0415-Economic-and-Policy-Impact-Statement-UPLAA3.pdf
   # 
   
-  
-for (meth in methods) {  
-  start_time <- Sys.time()
-  d_nj <- policy_simulation(state='New Jersey',
-                            makelog=TRUE,
-                            xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
-                                    'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
-                                    "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
-                            base_bene_level=.66,
-                            impute_method = meth,
-                            place_of_work = FALSE,
-                            exclusive_particip = TRUE,
-                            ext_resp_len = TRUE,
-                            ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=0, topoff_minlength=10,
-                            bene_effect=TRUE,  wait_period=5, clone_factor=0, week_bene_cap=594,
-                            own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
-                            illspouse_uptake=.25, illchild_uptake=.25,
-                            own_elig_adj=.7, matdis_elig_adj=.7,
-                            maxlen_own =130, maxlen_matdis =130, maxlen_bond =30, maxlen_illparent =30, 
-                            maxlen_PFL= 30, maxlen_DI=130, maxlen_total=130,
-                            maxlen_illspouse =30, maxlen_illchild =30,earnings=8400,output=paste0("NJ_",meth,"_method_resid_redo"), output_stats=c('state_compar'), random_seed=123)
-  
-  
-  end_time <- Sys.time()
-  print(end_time - start_time)
-}
+#   
+# for (meth in methods) {  
+#   start_time <- Sys.time()
+#   d_nj <- policy_simulation(state='NJ',
+#                             makelog=TRUE,
+#                             xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
+#                                     'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
+#                                     "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
+#                             base_bene_level=.66,
+#                             impute_method = meth,
+#                             place_of_work = FALSE,
+#                             exclusive_particip = TRUE,
+#                             ext_resp_len = TRUE,
+#                             ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=0, topoff_minlength=10,
+#                             bene_effect=TRUE,  wait_period=5, clone_factor=0, week_bene_cap=594,
+#                             own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, illparent_uptake=.25,
+#                             illspouse_uptake=.25, illchild_uptake=.25,
+#                             own_elig_adj=.7, matdis_elig_adj=.7,
+#                             maxlen_own =130, maxlen_matdis =130, maxlen_bond =30, maxlen_illparent =30, 
+#                             maxlen_PFL= 30, maxlen_DI=130, maxlen_total=130,
+#                             maxlen_illspouse =30, maxlen_illchild =30,earnings=8400,output=paste0("NJ_",meth,"_method_resid_redo"), output_stats=c('state_compar'), random_seed=123)
+#   
+#   
+#   end_time <- Sys.time()
+#   print(end_time - start_time)
+# }

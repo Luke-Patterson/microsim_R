@@ -384,7 +384,7 @@ logit_leave_method <- function(d_test, d_train, xvars=NULL, yvars, test_filts, t
   # old merge code caused memory issues. Using match instead.
   #d_test <- merge(d_filt, d_test, by='id', all.y=TRUE)
   for (i in names(d_filt)) {
-    if (i %in% names(d_test)==FALSE){
+    if ((i %in% names(d_test))==FALSE){
       d_test[i] <- d_filt[match(d_test$id, d_filt$id), i]    
     }
   }

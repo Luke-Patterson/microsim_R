@@ -46,7 +46,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               elig_rule_logic= '(earnings & weeks & ann_hours & minsize)',
                               formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_bene_levels=NULL,
                               weightfactor=1, output=NULL, output_stats=NULL, random_seed=123,
-                              SMOTE=FALSE) {
+                              SMOTE=FALSE) { # SMOTE still under construction, should remain false) {
   
   
   ####################################
@@ -117,17 +117,19 @@ policy_simulation <- function(saveCSV=FALSE,
    d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
    # load from residence ACS if state is a 
    if (place_of_work==TRUE) {
-     d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_work.rds"))  
+     d_acs <- readRDS(paste0("./R_dataframes/work_states/",state,"_work.rds"))  
    }
    else {
-     d_acs <- readRDS(paste0("./R_dataframes/states/",state,"_resid.rds"))  
+     d_acs <- readRDS(paste0("./R_dataframes/resid_states/",state,"_resid.rds"))  
    }
 
   #-----CPS to ACS Imputation-----
+   #already done on R_dataframes, don't need to run here any more
+   
   # Impute hourly worker, weeks worked, and firm size variables from CPS into ACS. 
   # These are needed for leave program eligibilitly determination
   # INPUT: cleaned acs, cps files
-  d_acs <- impute_cps_to_acs(d_acs, d_cps)
+  # d_acs <- impute_cps_to_acs(d_acs, d_cps)
   # OUTPUT: cleaned acs with imputed weeks worked, employer size, and hourly worker status
   
   # sample ACS
@@ -166,7 +168,8 @@ policy_simulation <- function(saveCSV=FALSE,
   
   # option to apply SMOTE to d_fmla data set to correct for class imbalance of each leave type
   if (SMOTE == TRUE) {
-    d_fmla <- SMOTE(d_fmla, xvars)
+    smote_dfs <- apply_smote(d_fmla, xvars)
+    browser()
   }
   
   # adjust for program's base behavioral effect on leave taking

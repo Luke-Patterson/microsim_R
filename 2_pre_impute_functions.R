@@ -176,19 +176,19 @@ impute_intra_fmla <- function(d_fmla, intra_impute) {
 # 2. SMOTE
 # ============================ #
 # function to apply SMOTE to FMLA data
-SMOTE <- function(d_fmla, xvars) {
+apply_smote <- function(d_fmla, xvars) {
   # iterate through all need and take vars for each leave type
+  smote_dfs <- list()
   for (i in leave_types) {
     for (j in c('take_', 'need_')){
       yvar= paste0(j,i)
-      formula <- paste(yvar, "~",  paste(xvars[1],'+', paste(xvars[2:length(xvars)], collapse=" + ")))
-      d_smote <- SMOTE(formula,d_fmla)
-      browser()
+      d_smote <- d_fmla
+      d_smote[,paste0('factor_',yvar)] <- as.factor(d_smote[,yvar])
+      formula <- paste(paste0('factor_',yvar), "~",  paste(xvars[1],'+', paste(xvars[2:length(xvars)], collapse=" + ")))
+      smote_dfs[yvar] <- SMOTE(as.formula(formula),d_smote)
     }
   }
-  
-  browser()
-  return(d_fmla)
+  return(smote_dfs)
 }
 
 # ============================ #
@@ -203,21 +203,25 @@ acs_filtering <- function(d, weightfactor, place_of_work, state) {
   
   # apply state filters
   if (state!='') {
-
     if (place_of_work==FALSE) {
       # merge in state abbreviations
       state_codes <- read.csv(paste0("./csv_inputs/ACS_state_codes.csv"))
       d <- merge(d,state_codes, by="ST",all.x=TRUE)  
-      d <- d %>% filter(state_name==state)
+      d <- d %>% filter(state_abbr==state)
     }
     if (place_of_work==TRUE) {
       # merge in state abbreviations
       state_codes <- read.csv(paste0("./csv_inputs/ACS_state_codes.csv"))
       state_codes["POWSP"] <- state_codes["ST"]  
       d <- merge(d,state_codes, by="POWSP",all.x=TRUE)
-      d <- d %>% filter(state_name==state)
+      d <- d %>% filter(state_abbr==state)
     }
   }
-
+  
+  # make sure there's not zero observations
+  if (nrow(d)==0) {
+    stop('Error: no rows in ACS dataframe')
+  }
+  
   return(d)
 }

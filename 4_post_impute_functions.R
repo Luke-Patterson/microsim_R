@@ -100,7 +100,7 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
       # old merge code, caused memory issues. using match instead
       #d_test <- merge(i, d_test, by="id",all.y=TRUE)  
       for (j in names(i)) {
-        if (i %in% names(d_test)==FALSE){
+        if (j %in% names(d_test)==FALSE){
           d_test[j] <- i[match(d_test$id, i$id), j]    
         }
       }
