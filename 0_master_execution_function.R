@@ -33,11 +33,11 @@ policy_simulation <- function(saveCSV=FALSE,
                               own_elig_adj=1, illspouse_elig_adj=1, illchild_elig_adj=1, 
                               illparent_elig_adj=1, matdis_elig_adj=1, bond_elig_adj=1,
                               clone_factor=0, sens_var = 'resp_len', progalt_post_or_pre ='post',
-                              ext_resp_len = FALSE, len_method = 'mean',
-                              intra_impute = TRUE,
+                              ext_resp_len = FALSE, len_method = 'mean', 
+                              rr_sensitive_leave_len=TRUE,
                               place_of_work = FALSE,
                               state = '',
-                              exclusive_particip=TRUE,
+                              dual_receiver = 1,
                               ext_base_effect=TRUE, extend_prob=0, extend_days=0, extend_prop=1,
                               maxlen_own =60, maxlen_matdis =60, maxlen_bond =60, maxlen_illparent =60, maxlen_illspouse =60, maxlen_illchild =60,
                               maxlen_PFL=maxlen_illparent+maxlen_illspouse+maxlen_illchild+maxlen_bond, maxlen_DI=maxlen_bond+maxlen_matdis,
@@ -45,8 +45,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               fmla_protect=TRUE, earnings=NULL, weeks= NULL, ann_hours=NULL, minsize= NULL, 
                               elig_rule_logic= '(earnings & weeks & ann_hours & minsize)',
                               formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_bene_levels=NULL,
-                              weightfactor=1, output=NULL, output_stats=NULL, random_seed=123,
-                              SMOTE=FALSE) { # SMOTE still under construction, should remain false) {
+                              weightfactor=1, output='output', output_stats=NULL, random_seed=123) { 
   
   
   ####################################
@@ -143,6 +142,7 @@ policy_simulation <- function(saveCSV=FALSE,
   if (!is.null(sample_prop) & !is.null(sample_num)) {
     d_acs <- sample_acs(d_acs, sample_prop=sample_prop, sample_num=sample_num)  
   }
+   
   #========================================
   # 2. Pre-imputation 
   #========================================
@@ -159,19 +159,7 @@ policy_simulation <- function(saveCSV=FALSE,
   
   # preserve original copy of FMLA survey
   d_fmla_orig <- d_fmla 
-  
-  # INPUT: FMLA data
-  # intra-fmla imputation for additional leave taking and needings
-  d_fmla <- impute_intra_fmla(d_fmla, intra_impute)
 
-  # OUTPUT: FMLA data with modified take_ and need_ vars for those with additional leaves
-  
-  # option to apply SMOTE to d_fmla data set to correct for class imbalance of each leave type
-  if (SMOTE == TRUE) {
-    smote_dfs <- apply_smote(d_fmla, xvars)
-    browser()
-  }
-  
   # adjust for program's base behavioral effect on leave taking
   # INPUT: FMLA data
   # In presence of program, apply leave-taking behavioral updates
@@ -214,7 +202,7 @@ policy_simulation <- function(saveCSV=FALSE,
   #         would produced a biased 
   #         estimate of leave length
   d_acs_imp <- impute_leave_length(d_fmla_orig, d_acs_imp, conditional, test_conditional, ext_resp_len,
-                                   len_method)
+                                   len_method, rr_sensitive_leave_len,base_bene_level)
   # OUTPUT: ACS data with lengths for leaves imputed
   
   # function interactions description (may not be complete, just writing as they come to me):
@@ -241,7 +229,7 @@ policy_simulation <- function(saveCSV=FALSE,
   # INPUT: ACS file
   d_acs_imp <-ELIGIBILITYRULES(d_acs_imp, earnings, weeks, ann_hours, minsize, base_bene_level, week_bene_min,
                                formula_prop_cuts, formula_value_cuts, formula_bene_levels, elig_rule_logic,
-                               FEDGOV, STATEGOV, LOCALGOV, SELFEMP,PRIVATE,exclusive_particip) 
+                               FEDGOV, STATEGOV, LOCALGOV, SELFEMP,PRIVATE,dual_receiver) 
   # OUTPUT: ACS file with program eligibility and base program take-up indicators
   
   # Option to extend leaves under leave program 
@@ -254,7 +242,7 @@ policy_simulation <- function(saveCSV=FALSE,
   d_acs_imp <-UPTAKE(d_acs_imp, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
                      illspouse_uptake, illchild_uptake, full_particip_needer, wait_period,
                      maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
-                     maxlen_total,maxlen_DI,maxlen_PFL,exclusive_particip)
+                     maxlen_total,maxlen_DI,maxlen_PFL,dual_receiver)
   # OUTPUT: ACS file with modified leave program variables based on user-specified program restrictions
   #         on maximum participation length and user-specified take-up rate assumptions
   

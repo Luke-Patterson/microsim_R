@@ -67,8 +67,9 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
              need_illparent = "need_illparent",
              need_matdis = "need_matdis",
              need_bond = "need_bond",
-              prop_pay = "prop_pay",
-              resp_len= "resp_len",
+             anypay = "anypay",
+             prop_pay = "prop_pay",
+             resp_len= "resp_len",
              unaffordable = 'unaffordable')
   
   # filters: logical conditionals always applied to filter vraiable imputation 
@@ -84,6 +85,7 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
                    need_illparent = "TRUE",
                    need_matdis = "female == 1 & nochildren == 0",
                    need_bond = "nochildren == 0",
+                   anypay = "TRUE",
                    prop_pay="TRUE",
                    resp_len="TRUE",
                   unaffordable = 'TRUE')
@@ -101,6 +103,7 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
               need_illparent = "~ weight",
               need_matdis = "~ fixed_weight",
               need_bond = "~ fixed_weight",
+              anypay = "~ fixed_weight",
               prop_pay = '~ fixed_weight',
               resp_len = "~ fixed_weight",
               unaffordable = "~ fixed_weight")
@@ -197,15 +200,6 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
     d_acs <- logit_leave_method(d_test=d_acs, d_train=d_fmla, xvars = "",
                                 yvars=yvars, test_filts=filts, train_filts=filts, 
                                 weights=weights, create_dummies=TRUE)
-  }
-  
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # alternate imputation methods will go here
-  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # for example:
-  
-  if (impute_method=="Hocus Pocus") {
-    # Hocus pocus function calls here
   }
   
   return(d_acs)
@@ -388,15 +382,13 @@ logit_leave_method <- function(d_test, d_train, xvars=NULL, yvars, test_filts, t
       d_test[i] <- d_filt[match(d_test$id, d_filt$id), i]    
     }
   }
-
   # replace factor levels with prop_pay proportions
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 1, 0, prop_pay))
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 2, .125, prop_pay))
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 3, .375, prop_pay))
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 4, .5, prop_pay))
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 5, .625, prop_pay))
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 6, .875, prop_pay))
-  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 7, 1, prop_pay))
+  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 1, .125, prop_pay))
+  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 2, .375, prop_pay))
+  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 3, .5, prop_pay))
+  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 4, .625, prop_pay))
+  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 5, .875, prop_pay))
+  d_test <- d_test %>% mutate(prop_pay = ifelse(prop_pay == 6, 1, prop_pay))
   
   return(d_test)
 }
@@ -509,8 +501,8 @@ runOrdinalEstimate <- function(d_train,d_test, formula, test_filt,train_filt, va
 # ============================ #
 # 1Bc. runRandDraw
 # ============================ #
-# run a random draw
-runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, len_method) {
+# run a random draw for leave length 
+runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, len_method, rr_sensitive_leave_len,wage_rr) {
   # filter training cases
   d_temp <- d_train %>% filter_(train_filt)
   train <- d_temp %>% filter(complete.cases(yvar))
@@ -619,7 +611,6 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         
         # old merge code caused memory issues. using match instead
         #est_df <- merge(temp_test[c('id', yvar)], est_df, by='id', all.y=TRUE)  
-        
         est_df[yvar] <- temp_test[match(est_df$id,temp_test$id), yvar]    
         
         # for the rest, resp_len = 0 and so leave length does not respond to presence or absence of program, 
@@ -633,10 +624,27 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
       }
     }
     
-    # if option not used, status quo will start out the same as counterfactual.
+    # if option not used, counterfactual will start out the same as status quo
     if (ext_resp_len==FALSE) {
       est_df[yvar] <- est_df[squo_var]
     }
+    
+    # if leave extension response ratio sensitivity is enabled, interpolate leave length to be somewhere 
+    # between the needed and status quo leave length
+    # prop_pay -> status quo receipt
+    
+    if (rr_sensitive_leave_len==TRUE) {
+      est_df['prop_pay'] <- d_test[match(est_df$id,d_test$id), 'prop_pay'] 
+      # set leave taking var equal to Z+ (X-Z)*(rrp-rre)/(1-rre), where:
+      # Z is status quo leave length
+      # X is maximum length needed
+      # rrp is the state program wage replacement rate
+      # rre is the status quo replacement rate (i.e. proportion of pay received)
+      
+      est_df[yvar] <- est_df[squo_var] + (est_df[yvar]-est_df[squo_var]) * (wage_rr - est_df['prop_pay']) / (1-est_df['prop_pay'])
+      est_df <- est_df[, !(names(est_df) %in% c('prop_pay'))]
+    }
+    
     return(est_df) 
   }
 }

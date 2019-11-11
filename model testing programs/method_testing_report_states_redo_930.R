@@ -22,11 +22,8 @@
   #=================================
   
     timestart <<- Sys.time()
-    d_ri <- policy_simulation(state='RI',
+    d_ri <- policy_simulation(state='MD',
                               makelog=TRUE,
-                              xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
-                                      'age_cat', "ltHS", "someCol", "BA", "GradSch", "black", 
-                                      "other", "asian",'native', "hisp","nochildren",'faminc_cat','coveligd'),
                               base_bene_level=.6,
                               impute_method=meth,
                               place_of_work = FALSE,

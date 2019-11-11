@@ -286,7 +286,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   d_fmla <- d_fmla %>% mutate(prop_pay = ifelse(A50 == 4, .625, prop_pay))
   d_fmla <- d_fmla %>% mutate(prop_pay = ifelse(A50 == 5, .875, prop_pay))
   d_fmla <- d_fmla %>% mutate(prop_pay = ifelse(A49 == 1, 1, prop_pay))
-  d_fmla <- d_fmla %>% mutate(prop_pay = ifelse(A45 == 2, 0, prop_pay))
+  d_fmla <- d_fmla %>% mutate(prop_pay = ifelse(A45 == 2, NA, prop_pay))
   
   # Adding values in leave program variables for starting condition (absence of program)
   # Leave Program Participation
@@ -663,7 +663,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   # Make more coarse categores
   d <- d %>% mutate(faminc_cat = ifelse(faminc <= 34999,1,NA))
   d <- d %>% mutate(faminc_cat = ifelse(faminc <= 74999 & faminc >= 35000,2,faminc_cat))
-  d <- d %>% mutate(faminc_cat = ifelse(faminc >= 87500, 3,faminc_cat))
+  d <- d %>% mutate(faminc_cat = ifelse(faminc >= 74999, 3,faminc_cat))
   
   # presence of children
   d <- d %>% mutate(fem_cu6= ifelse(PAOC==1,1,0))
