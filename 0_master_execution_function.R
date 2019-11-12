@@ -32,7 +32,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               illparent_uptake=.25, illspouse_uptake=.25, illchild_uptake=.25, wait_period=0,
                               own_elig_adj=1, illspouse_elig_adj=1, illchild_elig_adj=1, 
                               illparent_elig_adj=1, matdis_elig_adj=1, bond_elig_adj=1,
-                              clone_factor=0, sens_var = 'resp_len', progalt_post_or_pre ='post',
+                              clone_factor=1, sens_var = 'resp_len', progalt_post_or_pre ='post',
                               ext_resp_len = FALSE, len_method = 'mean', 
                               rr_sensitive_leave_len=TRUE,
                               place_of_work = FALSE,
@@ -45,7 +45,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               fmla_protect=TRUE, earnings=NULL, weeks= NULL, ann_hours=NULL, minsize= NULL, 
                               elig_rule_logic= '(earnings & weeks & ann_hours & minsize)',
                               formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_bene_levels=NULL,
-                              weightfactor=1, output='output', output_stats=NULL, random_seed=123) { 
+                              output='output', output_stats=NULL, random_seed=123) { 
   
   
   ####################################
@@ -142,6 +142,9 @@ policy_simulation <- function(saveCSV=FALSE,
   if (!is.null(sample_prop) & !is.null(sample_num)) {
     d_acs <- sample_acs(d_acs, sample_prop=sample_prop, sample_num=sample_num)  
   }
+  
+  # set derived parameters
+  weightfactor=1/clone_factor
    
   #========================================
   # 2. Pre-imputation 

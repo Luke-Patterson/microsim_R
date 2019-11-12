@@ -147,9 +147,9 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
 # allow users to clone ACS individuals
 
 CLONEFACTOR <- function(d, clone_factor) {
-  if (clone_factor > 0) {
+  if (clone_factor > 1) {
     d$clone_flag=0
-    num_clone <- round(clone_factor*nrow(d), digits=0)
+    num_clone <- round((clone_factor-1)*nrow(d), digits=0)
     d_clones <- data.frame(sample(d$id,num_clone,replace=TRUE))
     colnames(d_clones)[1] <- "id"
     d_clones <- join(d_clones,d,by='id', type='left')
@@ -1003,6 +1003,15 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
   # make sure those with particip_length 0 are also particip 0
   d <- d %>% mutate(particip= ifelse(particip_length==0,0, particip))
   
+  # create taker and needer vars
+  d['taker'] <- 0
+  d['needer'] <- 0
+  for (i in leave_types) {
+    take_var <- paste0('take_',i)
+    need_var <- paste0('need_',i)
+    d <- d %>% mutate(taker=ifelse(get(take_var)==1,1,taker))
+    d <- d %>% mutate(needer=ifelse(get(take_var)==1,1,taker))
+  }
   
   
   # calculate leave specific benefits
@@ -1028,7 +1037,7 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
       d['bene_PFL'] <- with(d, bene_PFL + get(ben_var))
     }
     
-    # create ptake_* vars
+    # create ptake_* vars 
     # dummies for those that took a given type of leave, and collected non-zero benefits for it
     take_var=paste("take_",i,sep="")
     ptake_var=paste("ptake_",i,sep="")
@@ -1042,9 +1051,10 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
     if (i=='bond'|i=='illspouse'|i=='illparent'|i=='illchild') {
       d['ptake_PFL'] <- with(d, ifelse(get(ben_var)>0 & get(take_var)>0,1,ptake_PFL))  
     }
+    # clean up vars
+    uptake_var=paste0('takes_up_',i)
+    d <- d[, !(names(d) %in% c(uptake_var))]
   }
-
-    
   return(d)
 }
 

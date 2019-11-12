@@ -202,6 +202,11 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
                                 weights=weights, create_dummies=TRUE)
   }
   
+  # finally, account for two-stage estimation of anypay and prop_pay. Prop_pay has no 0 values, just .125-1.
+  # Two-stage estimation is implemented by giving anypay prescendence - prop_pay set to 0 if anypay==0. 
+  # Prop_pay unchanged if anypay==1.
+  d_acs <- d_acs %>% mutate(prop_pay=ifelse(anypay==0,0,prop_pay))
+  
   return(d_acs)
 }
 
@@ -632,7 +637,9 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
     # if leave extension response ratio sensitivity is enabled, interpolate leave length to be somewhere 
     # between the needed and status quo leave length
     # prop_pay -> status quo receipt
-    
+    # first, create maximum need length var or "mnl_" var - will be same as yvar if sensitivity not enabled.
+    mnl_var <- sub('length','mnl',yvar)
+    est_df[mnl_var] <- est_df[yvar]
     if (rr_sensitive_leave_len==TRUE) {
       est_df['prop_pay'] <- d_test[match(est_df$id,d_test$id), 'prop_pay'] 
       # set leave taking var equal to Z+ (X-Z)*(rrp-rre)/(1-rre), where:
@@ -640,10 +647,10 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
       # X is maximum length needed
       # rrp is the state program wage replacement rate
       # rre is the status quo replacement rate (i.e. proportion of pay received)
-      
-      est_df[yvar] <- est_df[squo_var] + (est_df[yvar]-est_df[squo_var]) * (wage_rr - est_df['prop_pay']) / (1-est_df['prop_pay'])
+      est_df[yvar] <- est_df[squo_var] + (est_df[mnl_var]-est_df[squo_var]) * (wage_rr - est_df['prop_pay']) / (1-est_df['prop_pay'])
       est_df <- est_df[, !(names(est_df) %in% c('prop_pay'))]
     }
+    
     
     return(est_df) 
   }

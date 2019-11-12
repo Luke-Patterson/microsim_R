@@ -560,6 +560,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   # ed level
   d <- d %>% mutate(SCHL=ifelse(is.na(SCHL),0,SCHL)) 
   d <- d %>% mutate(ltHS=ifelse(SCHL<=15,1,0)) 
+  d <- d %>% mutate(HSgrad=ifelse(SCHL==16 | SCHL==17 ,1,0)) 
   d <- d %>% mutate(someCol=ifelse(SCHL>=18 & SCHL<=20,1,0)) 
   d <- d %>% mutate(BA =ifelse(SCHL==21,1,0)) 
   d <- d %>% mutate(GradSch=ifelse(SCHL>=22,1,0)) 
@@ -642,7 +643,13 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   
   # Weeks worked
   # simply taking midpoint of range for now
-  # gets imputed later on
+  # gets imputed later on from CPS
+  d <- d %>% mutate(weeks_worked_cat=ifelse(WKW==1,'50-52 weeks',NA))
+  d <- d %>% mutate(weeks_worked_cat=ifelse(WKW==2,'48-49 weeks',weeks_worked_cat))
+  d <- d %>% mutate(weeks_worked_cat=ifelse(WKW==3,'40-47 weeks',weeks_worked_cat))
+  d <- d %>% mutate(weeks_worked_cat=ifelse(WKW==4,'27-39 weeks',weeks_worked_cat))
+  d <- d %>% mutate(weeks_worked_cat=ifelse(WKW==5,'14-26 weeks',weeks_worked_cat))
+  d <- d %>% mutate(weeks_worked_cat=ifelse(WKW==6,'13 weeks or less',weeks_worked_cat))
   
   d <- d %>% mutate(weeks_worked=ifelse(WKW==1,51,0))
   d <- d %>% mutate(weeks_worked=ifelse(WKW==2,48.5,weeks_worked))
@@ -651,6 +658,22 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   d <- d %>% mutate(weeks_worked=ifelse(WKW==5,20,weeks_worked))
   d <- d %>% mutate(weeks_worked=ifelse(WKW==6,7.5,weeks_worked))
   d <- d %>% mutate(weeks_worked=ifelse(is.na(weeks_worked),0,weeks_worked))
+  
+  d <- d %>% mutate(wkw_min=ifelse(WKW==1,50,0))
+  d <- d %>% mutate(wkw_min=ifelse(WKW==2,48,wkw_min))
+  d <- d %>% mutate(wkw_min=ifelse(WKW==3,40,wkw_min))
+  d <- d %>% mutate(wkw_min=ifelse(WKW==4,27,wkw_min))
+  d <- d %>% mutate(wkw_min=ifelse(WKW==5,14,wkw_min))
+  d <- d %>% mutate(wkw_min=ifelse(WKW==6,0,wkw_min))
+  d <- d %>% mutate(wkw_min=ifelse(is.na(wkw_min),0,wkw_min))
+  
+  d <- d %>% mutate(wkw_max=ifelse(WKW==1,52,0))
+  d <- d %>% mutate(wkw_max=ifelse(WKW==2,49,wkw_max))
+  d <- d %>% mutate(wkw_max=ifelse(WKW==3,47,wkw_max))
+  d <- d %>% mutate(wkw_max=ifelse(WKW==4,39,wkw_max))
+  d <- d %>% mutate(wkw_max=ifelse(WKW==5,26,wkw_max))
+  d <- d %>% mutate(wkw_max=ifelse(WKW==6,13,wkw_max))
+  d <- d %>% mutate(wkw_max=ifelse(is.na(wkw_max),0,wkw_max))
   
   # Health Insurance from employer
   d <- d %>% mutate(hiemp=ifelse(HINS1==1,1,0))
@@ -680,8 +703,9 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
            "GradSch", "black", "white", "asian", "other",'native', "hisp", "OCC", "occ_1", "occ_2", "occ_3", 
            "occ_4", "occ_5", "occ_6", "occ_7", "occ_8", "occ_9", "occ_10", "ind_1", "ind_2", "ind_3", "ind_4", 
            "ind_5", "ind_6", "ind_7", "ind_8", "ind_9", "ind_10", "ind_11", "ind_12", "ind_13", "weeks_worked",
-           "WAGP","WKHP","PWGTP", replicate_weights,"FER", "WKW","COW","ESR","partner","ndep_kid","ndep_old",'empgov_fed','empgov_st',
-           'wkhours', 'empgov_loc', 'ST','POWSP','age_cat','faminc_cat')]
+           "WAGP",'wage12',"WKHP","PWGTP", replicate_weights,"FER", "WKW","COW","ESR","partner","ndep_kid",
+           "ndep_old",'empgov_fed','empgov_st', 'wkhours', 'empgov_loc', 'ST','POWSP','age_cat','faminc_cat','employed',
+           'married','lnearn','HSgrad','BAplus')]
 
   # id variable
   d$id <- as.numeric(rownames(d))
@@ -937,8 +961,10 @@ impute_cps_to_acs <- function(d_acs, d_cps){
     mutate(temp_size=ifelse(emp_size==6,sample(1000:99999, nrow(d_acs), replace=T),temp_size)) %>%
     mutate(emp_size=temp_size) %>%
   # clean up weeks worked variables
-  mutate(weeks_worked_cat=weeks_worked) %>%
-  mutate(weeks_worked=iweeks_worked)
+    mutate(weeks_worked_cat=weeks_worked) %>%
+    mutate(weeks_worked=iweeks_worked) %>%
+  # create dummy for one employer worked for
+    mutate(oneemp=ifelse(num_emp==1,1,0))
   
   # generate FMLA coverage eligibility based on these vars:
   d_acs <- d_acs %>% mutate(coveligd=ifelse(WKHP>=25 & weeks_worked>=40 & num_emp==1 & emp_size>=50,1,0))
