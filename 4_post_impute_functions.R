@@ -659,6 +659,7 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
         samp_sum <- sum(d[samp_idx,'PWGTP'])
       }
     }
+    browser()
     # set uptake status for leave type
     d[,uptake_var] <- 0
     d[samp_idx, uptake_var] <- 1

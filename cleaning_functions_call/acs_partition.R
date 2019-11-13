@@ -15,25 +15,25 @@ source("3_impute_functions.R")
 states <- read.csv("csv_inputs/ACS_state_codes.csv")
 
 # load cleaned cps data
-# d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
-# 
-# # do state of residence first; just read csv's and process
-# for (i in states[,'state_abbr']) {
-#   print(paste0('creating residence data set for ',i))
-#   lower_abbr <- tolower(i)
-#   # delete objects from previous loop to preserve memory
-#   rm(d_acs,d_acs_person,d_acs_house)
-#   # load the file
-#   d_acs_person <- read.csv(paste0("./csv_inputs/ss16p",lower_abbr,'.csv'))#,nrows=100)
-#   d_acs_house <- read.csv(paste0("./csv_inputs/ss16h",lower_abbr,'.csv'))#,nrows=100)
-#   # clean the file
-#   d_acs <- clean_acs(d_acs_person, d_acs_house, save_csv=FALSE)
-#   # impute CPS
-#   d_acs <- impute_cps_to_acs(d_acs, d_cps)
-#   # save R dataframe
-#   saveRDS(d_acs,file=paste0('./R_dataframes/resid_states/',i,'_resid.rds'))
-# }
-# 
+d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
+
+# do state of residence first; just read csv's and process
+for (i in states[,'state_abbr']) {
+  print(paste0('creating residence data set for ',i))
+  lower_abbr <- tolower(i)
+  # delete objects from previous loop to preserve memory
+  rm(d_acs,d_acs_person,d_acs_house)
+  # load the file
+  d_acs_person <- read.csv(paste0("./csv_inputs/ss16p",lower_abbr,'.csv'))#,nrows=100)
+  d_acs_house <- read.csv(paste0("./csv_inputs/ss16h",lower_abbr,'.csv'))#,nrows=100)
+  # clean the file
+  d_acs <- clean_acs(d_acs_person, d_acs_house, save_csv=FALSE)
+  # impute CPS
+  d_acs <- impute_cps_to_acs(d_acs, d_cps)
+  # save R dataframe
+  saveRDS(d_acs,file=paste0('./R_dataframes/resid_states/',i,'_resid.rds'))
+}
+
 # remove state of work files to ensure append isn't duplicating records
 for (i in dir('./R_dataframes/work_states')) {
   unlink(paste0('./R_dataframes/work_states/',i))

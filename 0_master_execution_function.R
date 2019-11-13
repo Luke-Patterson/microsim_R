@@ -289,6 +289,15 @@ policy_simulation <- function(saveCSV=FALSE,
     write.csv(d_acs_imp, file=paste0('./output/',output,'.csv'))
   }
   
+  # if using POW, adjust weights up by .02 because there are some missing POW
+  if (place_of_work==TRUE){
+    replicate_weights <- paste0('PWGTP',seq(1,80))
+    d_acs_imp['PWGTP'] <- d_acs_imp['PWGTP']*1.02
+    for (i in replicate_weights) {
+      d_acs_imp[i] <- d_acs_imp[i]*1.02
+    }  
+  }
+  
   for (i in output_stats) {
     if (i=='standard') {
       standard_summary_stats(d_acs_imp,output) 

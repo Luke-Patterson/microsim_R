@@ -33,7 +33,7 @@ d <- policy_simulation(
                   sample_prop=1,
 		              state='WY',
 		              SELFEMP=FALSE,
-		              place_of_work = FALSE,
+		              place_of_work = TRUE,
 		              dual_receiver = .75,
                   ext_resp_len = FALSE, len_method = 'mean', sens_var = 'unaffordable', progalt_post_or_pre ='post',
 		              ext_base_effect=TRUE, extend_prob=.01, extend_days=1, extend_prop=1.01, topoff_rate=.01, topoff_minlength=10,
