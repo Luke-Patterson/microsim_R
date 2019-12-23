@@ -1,0 +1,86 @@
+  # code for issue brief 1 - simulating 2012 leave program in RI 
+  
+  #rm(list=ls())
+  cat("\014")  
+  basepath <- rprojroot::find_rstudio_root_file()
+  setwd(basepath)
+  options(error=recover)
+  #options(error=NULL)
+  
+  # sample master execution function for testing code
+  source("0_master_execution_function.R")
+  meth <- 'logit'
+  #=================================
+  #Rhode Island
+  #=================================
+
+  timestart <<- Sys.time()
+  ri <- policy_simulation(saveCSV=TRUE,
+                            state='RI',
+                            makelog=TRUE,
+                            base_bene_level=.6,
+                            impute_method=meth,
+                            place_of_work = TRUE,
+                            dual_receiver = 1,
+                            ext_resp_len = TRUE, 
+                            ext_base_effect=TRUE,
+                            bene_effect=FALSE, wait_period=5, full_particip=TRUE, clone_factor=1, week_bene_cap=795, week_bene_min=89,
+                            dependent_allow = 10,
+                            sens_var='resp_len',
+                            own_uptake= 0.0803, matdis_uptake=.0268, bond_uptake=.0104, illparent_uptake=.0009,
+                            illspouse_uptake=.0016, illchild_uptake=.0005,
+                            maxlen_PFL= 20, maxlen_DI=150, maxlen_own =150, maxlen_matdis =150, maxlen_bond =20, maxlen_illparent=20, 
+                            maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150, earnings=3840,output=paste0("RI_",meth,"issue_brief_1"),
+                            output_stats=c('state_compar'),  random_seed=12312)
+  timeend <<- Sys.time()
+  print(timeend - timestart)
+  
+
+  #=================================
+  # California
+  #=================================
+
+  timestart <<- Sys.time()
+  policy_simulation(saveCSV=TRUE,
+                            state='CA',
+                            makelog=TRUE,
+                            base_bene_level=.55,
+                            impute_method=meth,
+                            place_of_work = TRUE,
+                            dual_receiver = 1,
+                            ext_resp_len = TRUE,
+                            ext_base_effect=TRUE,
+                            bene_effect=FALSE, wait_period=5, full_particip=TRUE, clone_factor=1, week_bene_cap=1216, week_bene_min=50,
+                            dependent_allow = 10,
+                            sens_var='resp_len',
+                            own_uptake=.0327, matdis_uptake=.0097, bond_uptake=.0121, illparent_uptake=.0040,
+                            illspouse_uptake=.0040, illchild_uptake=.0026,
+                            maxlen_PFL= 30, maxlen_DI=260, maxlen_own =260, maxlen_matdis =260, maxlen_bond =30, maxlen_illparent=30,
+                            maxlen_illspouse =30, maxlen_illchild =30, maxlen_total=260, earnings=3840,output=paste0("CA_",meth,"issue_brief_1"),
+                            output_stats=c('state_compar'),  random_seed=12312)
+  timeend <<- Sys.time()
+  print(timeend - timestart)
+
+  #=================================
+  # New Jersey
+  #=================================
+  timestart <<- Sys.time()
+  policy_simulation(saveCSV=TRUE,
+                            state='NJ',
+                            makelog=TRUE,
+                            base_bene_level=.66,
+                            impute_method=meth,
+                            place_of_work = TRUE,
+                            dual_receiver = 1,
+                            ext_resp_len = TRUE,
+                            ext_base_effect=TRUE,
+                            bene_effect=FALSE, wait_period=5, full_particip=TRUE, clone_factor=1, week_bene_cap=594, week_bene_min=0,
+                            dependent_allow = 10,
+                            sens_var='resp_len',
+                            own_uptake=.0175, matdis_uptake=.0063, bond_uptake=.0066, illparent_uptake=.0004,
+                            illspouse_uptake=.0004, illchild_uptake=.0004,
+                            maxlen_PFL= 30, maxlen_DI=130, maxlen_own =130, maxlen_matdis =130, maxlen_bond =30, maxlen_illparent=30,
+                            maxlen_illspouse =30, maxlen_illchild =30, maxlen_total=130, earnings=8400,output=paste0("NJ_",meth,"issue_brief_1"),
+                            output_stats=c('state_compar'),  random_seed=12312)
+  timeend <<- Sys.time()
+  print(timeend - timestart)

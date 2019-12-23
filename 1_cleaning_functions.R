@@ -166,10 +166,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   # leave reason for most recent leave
   d_fmla <- d_fmla %>% mutate(reason_take = ifelse(is.na(A20) == FALSE & A20 == 2,A5_2_CAT,A5_1_CAT))
   
-  # leave reason for most recent leave (revised)
-  d_fmla <- d_fmla %>% mutate(reason_take_rev = ifelse(is.na(A20) == FALSE & A20 == 2,A5_2_CAT_REV,A5_1_CAT_rev))
-  
-  # leave reason for longest leave
+    # leave reason for longest leave
   # 10/9, Luke: changing to be longest leave, regardless of if it is different from most recent leave or not
   d_fmla <- d_fmla %>% mutate(long_reason = A5_1_CAT)
   
@@ -207,10 +204,57 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   d_fmla <- d_fmla %>% mutate(hospital2 = ifelse(is.na(LEAVE_CAT) == FALSE & (LEAVE_CAT == 2 | LEAVE_CAT == 4), hospital_need, hospital_take))  
   
   # length of leave for most recent leave
-  d_fmla <- d_fmla %>% mutate(length = ifelse(is.na(A20) == FALSE & A20 == 2, A19_2_CAT_rev, A19_1_CAT_rev))
+  # take mid points in days of categorical leave length questions 
+  # round up/down on tie breaks in alternating fashion
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=0)
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==1,1,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==2,2,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==3,3,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==4,4,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==5,5,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==6,6,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==7,7,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==8,8,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==9,9,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==10,10,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==11,12,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==12,13,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==13,15,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==14,18,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==15,20,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==16,22,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==17,27,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==18,30,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==19,33,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==20,38,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==21,43,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==22,48,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==23,53,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==24,58,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==25,66,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==26,80,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==27,106,A19_1_vals))
+  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==28,191,A19_1_vals))
   
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=0)
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==1,1,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==2,2,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==3,3,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==4,4,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==5,5,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==6,8,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==7,10,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==8,15,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==9,41,A19_2_vals))
+  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==10,90,A19_2_vals))
+  
+  d_fmla <- d_fmla %>% mutate(length = ifelse(is.na(A20) == FALSE & A20 == 2, A19_2_vals, A19_1_vals))
   # 10/9, Luke: changing to be longest leave, regardless of if it is different from most recent leave or not
-  d_fmla <- d_fmla %>% mutate(long_length = A19_1_CAT_rev)
+  d_fmla <- d_fmla %>% mutate(long_length = A19_1_vals)
+  # top code length to be 261 days - number of days in a working year
+  d_fmla <- d_fmla %>% mutate(length= ifelse(length>261,261,length))
+  d_fmla <- d_fmla %>% mutate(long_length= ifelse(long_length>261,261,long_length))
+  
   
   # old longest leave length code
   # d_fmla <- d_fmla %>% mutate(long_length = ifelse(is.na(A20) == FALSE & A20 == 2, A19_1_CAT_rev, NA))
@@ -334,20 +378,19 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   
   
   # maternity disability
-  d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(((A5_1_CAT == 21 & A11_1 == 1 & GENDER_CAT == 2) | A5_1_CAT_rev == 32) & (A20 != 2 | is.na(A20) == TRUE) , 1, 0))
-  d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(((A5_2_CAT == 21 & A11_2 == 1 & GENDER_CAT == 2) | A5_2_CAT_REV == 32) & (A20 == 2 & is.na(A20)== FALSE) , 1, take_matdis))
+  d_fmla <- d_fmla %>% mutate(take_matdis = ifelse((A5_1_CAT == 21 & A11_1 == 1 & GENDER_CAT == 2) & (A20 != 2 | is.na(A20) == TRUE) , 1, 0))
+  d_fmla <- d_fmla %>% mutate(take_matdis = ifelse((A5_2_CAT == 21 & A11_2 == 1 & GENDER_CAT == 2) & (A20 == 2 & is.na(A20)== FALSE) , 1, take_matdis))
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(take_matdis) == 1,0,take_matdis))
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(A5_1_CAT) == 1 & is.na(A5_2_CAT) == 1, NA, take_matdis))
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(take_matdis) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0, take_matdis))
   d_fmla <- d_fmla %>% mutate(take_matdis = ifelse(is.na(take_matdis) == 1 & GENDER_CAT == 1,0, take_matdis))
   
-  d_fmla <- d_fmla %>% mutate(long_matdis = ifelse((A5_1_CAT == 21 & A11_1 == 1 & GENDER_CAT == 2) 
-                                                                     | A5_1_CAT_rev == 32, 1, 0))
+  d_fmla <- d_fmla %>% mutate(long_matdis = ifelse(A5_1_CAT == 21 & A11_1 == 1 & GENDER_CAT == 2, 1, 0))
   d_fmla <- d_fmla %>% mutate(long_matdis = ifelse(is.na(long_matdis) == 1,0,long_matdis))
   d_fmla <- d_fmla %>% mutate(long_matdis = ifelse(is.na(A5_1_CAT) == 1 & is.na(A5_2_CAT) == 1, NA, long_matdis))
   d_fmla <- d_fmla %>% mutate(long_matdis = ifelse(is.na(long_matdis) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0, long_matdis))
   
-  d_fmla <- d_fmla %>% mutate(need_matdis = ifelse((B6_1_CAT == 21 & B12_1 == 1 & GENDER_CAT == 2) | B6_1_CAT_rev == 32, 1, 0))
+  d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(B6_1_CAT == 21 & B12_1 == 1 & GENDER_CAT == 2, 1, 0))
   d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(need_matdis) == 1,0,need_matdis))
   d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(B6_1_CAT) == 1, NA, need_matdis))
   d_fmla <- d_fmla %>% mutate(need_matdis = ifelse(is.na(need_matdis) == 1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0, need_matdis))
@@ -364,18 +407,18 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   #                                                & (A20 != 2|is.na(A20)==TRUE),1,0))
   # d_fmla <- d_fmla %>% mutate(take_bond = ifelse(A5_2_CAT==21 & (is.na(A11_2) == 1 | GENDER_CAT == 1 | (GENDER_CAT==2 & A11_2==2 & A5_2_CAT_REV!=32)) 
   #                                                & (A20 == 2 & is.na(A20)==FALSE),1,take_bond))
-  d_fmla <- d_fmla %>% mutate(take_bond = ifelse((is.na(take_matdis) | take_matdis == 0) & 
-                                                 (A5_1_CAT_rev == 31 | (A5_1_CAT == 21 & (GENDER_CAT == 1 | (GENDER_CAT==2 & A5_1_CAT_rev!=32))))
-                                                 & (is.na(A20) | A20 != 2),1,0))
+  d_fmla <- d_fmla %>% mutate(take_bond = ifelse((is.na(take_matdis)==1 | take_matdis == 0) & A5_1_CAT == 21 & (is.na(A11_1) == 1 | A11_1==2) & (is.na(A20)==1 | A20 != 2),1,0))
+  d_fmla <- d_fmla %>% mutate(take_bond = ifelse((is.na(take_matdis)==1 | take_matdis == 0) & (is.na(A5_2_CAT)==0 & A5_2_CAT == 21) & 
+                                                  (is.na(A11_2) == 1 | A11_2==2) & (is.na(A20)==0 | A20 == 2),1,take_bond))
+  
   d_fmla <- d_fmla %>% mutate(take_bond = ifelse(is.na(A5_1_CAT) == 1, NA, take_bond))
   d_fmla <- d_fmla %>% mutate(take_bond = ifelse(is.na(take_bond) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0, take_bond))
   
-  d_fmla <- d_fmla %>% mutate(long_bond = ifelse(A5_1_CAT==21 & (is.na(A11_1) == 1 | GENDER_CAT == 1 | (GENDER_CAT==2 & A11_1==2 & A5_1_CAT_rev!=32)),1,0))
+  d_fmla <- d_fmla %>% mutate(long_bond = ifelse((is.na(long_matdis)==1 | long_matdis == 0) & A5_1_CAT==21 & (is.na(A11_1) == 1 | A11_1==2),1,0))
   d_fmla <- d_fmla %>% mutate(long_bond = ifelse(is.na(A5_1_CAT) == 1, NA, long_bond))
   d_fmla <- d_fmla %>% mutate(long_bond = ifelse(is.na(long_bond) == 1 & (LEAVE_CAT == 2 | LEAVE_CAT == 3),0, long_bond))
   
-  d_fmla <- d_fmla %>% mutate(need_bond = ifelse((is.na(need_matdis) | need_matdis == 0) & 
-                                                   (B6_1_CAT_rev == 31 | (B6_1_CAT == 21 & (GENDER_CAT == 1 | (GENDER_CAT==2 & B6_1_CAT_rev!=32)))),1,0))
+  d_fmla <- d_fmla %>% mutate(need_bond = ifelse((is.na(need_matdis) | need_matdis == 0) & (B6_1_CAT == 21 & B12_1 == 2),1,0))
   d_fmla <- d_fmla %>% mutate(need_bond = ifelse(is.na(B6_1_CAT) == 1, NA, need_bond))
   d_fmla <- d_fmla %>% mutate(need_bond = ifelse(is.na(need_bond) == 1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0, need_bond))
   
@@ -502,7 +545,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   d_hh$ndep_old <- d_hh$R65
   
   # cut down vars to save on memory
-  d_hh <- d_hh[c("SERIALNO","nochildren","lnfaminc","faminc", "PARTNER","ndep_kid","ndep_old")]
+  d_hh <- d_hh[c("SERIALNO","nochildren","lnfaminc","faminc", "PARTNER","ndep_kid","ndep_old",'NPF')]
   
   # -------------------------- #
   # ACS Person File
@@ -697,15 +740,15 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   # strip to only required variables to save memory
   # use select
   replicate_weights <- paste0('PWGTP',seq(1,80))
-  d <- d[c("nochildren", "lnfaminc", "faminc", "lnearn","fem_cu6","fem_c617","fem_cu6and617","fem_nochild",
+  d <- d[c('SERIALNO',"nochildren", "lnfaminc", "faminc", "lnearn","fem_cu6","fem_c617","fem_cu6and617","fem_nochild",
            "age", "a_age", "widowed", "divorced", "hiemp",
            "separated", "nevermarried", "male", "female", "agesq", "ltHS", "someCol", "BA", 
            "GradSch", "black", "white", "asian", "other",'native', "hisp", "OCC", "occ_1", "occ_2", "occ_3", 
            "occ_4", "occ_5", "occ_6", "occ_7", "occ_8", "occ_9", "occ_10", "ind_1", "ind_2", "ind_3", "ind_4", 
            "ind_5", "ind_6", "ind_7", "ind_8", "ind_9", "ind_10", "ind_11", "ind_12", "ind_13", "weeks_worked",
-           "WAGP",'wage12',"WKHP","PWGTP", replicate_weights,"FER", "WKW","COW","ESR","partner","ndep_kid",
+           "WAGP",'wage12',"WKHP","PWGTP", replicate_weights,"FER", "WKW","COW","ESR",'NPF',"partner","ndep_kid",
            "ndep_old",'empgov_fed','empgov_st', 'wkhours', 'empgov_loc', 'ST','POWSP','age_cat','faminc_cat','employed',
-           'married','lnearn','HSgrad','BAplus')]
+           'married','HSgrad','BAplus')]
 
   # id variable
   d$id <- as.numeric(rownames(d))
@@ -716,9 +759,6 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   # -------------------------- #
   # Remove ineligible workers
   # -------------------------- #
-  
-  # Restrict to ages 18 and over 
-  d <- d %>% filter(age>=18)
   
   # Restrict dataset to civilian employed workers
   d <- d %>% filter(ESR==1|ESR==2)

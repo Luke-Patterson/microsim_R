@@ -77,14 +77,14 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
                    illspouse = "nevermarried == 0 & divorced == 0",
                    illchild = "TRUE",
                    illparent = "TRUE",
-                   matdis = "female == 1 & nochildren == 0",
-                   bond = "nochildren == 0",
+                   matdis = "female == 1 & nochildren == 0 & age < 50",
+                   bond = "nochildren == 0 & age < 50",
                    need_own = "TRUE",
                    need_illspouse = "nevermarried == 0 & divorced == 0",
                    need_illchild = "TRUE",
                    need_illparent = "TRUE",
-                   need_matdis = "female == 1 & nochildren == 0",
-                   need_bond = "nochildren == 0",
+                   need_matdis = "female == 1 & nochildren == 0 & age < 50",
+                   need_bond = "nochildren == 0 & age < 50",
                    anypay = "TRUE",
                    prop_pay="TRUE",
                    resp_len="TRUE",
@@ -507,10 +507,16 @@ runOrdinalEstimate <- function(d_train,d_test, formula, test_filt,train_filt, va
 # 1Bc. runRandDraw
 # ============================ #
 # run a random draw for leave length 
-runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, len_method, rr_sensitive_leave_len,wage_rr) {
+runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, len_method, 
+                        rr_sensitive_leave_len,wage_rr,maxlen) {
   # filter training cases
   d_temp <- d_train %>% filter_(train_filt)
   train <- d_temp %>% filter(complete.cases(yvar))
+  
+  # if weight variable not in the train data set, generate it as a column of 1's
+  if ('weight' %in% colnames(train)==FALSE){
+    train['weight'] <- 1
+  }
   
   # log FMLA sample sizes
   if (makelog == TRUE) {
@@ -520,7 +526,8 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
     cat(paste("Formula: Random draw from variable",yvar), file = log_name, sep="\n", append = TRUE)
     cat(paste("Filter condition:", train_filt), file = log_name, sep="\n", append = TRUE)
     cat(paste("Weighted mean of var:",weighted.mean(train[,yvar], 
-                                                    train[,'weight'], na.rm = TRUE)), file = log_name, sep="\n", append = TRUE)
+                                                      train[,'weight'], na.rm = TRUE)), file = log_name, sep="\n", append = TRUE)  
+    
     cat("------------------------------", file = log_name, sep="\n", append = TRUE)
     cat("", file = log_name, sep="\n", append = TRUE)
   }
@@ -581,17 +588,21 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         }
       }
       
-      
       # if these dataframes are not empty, we find the counterfactual lengths
       if (nrow(temp_test)!= 0 & nrow(temp_train)!= 0 ) {
         # mean method - find proportional difference of resp=1 and resp=0 mean, and multiply 
         # status quo lengths by that factor.
         if (len_method=='mean') {
-          train_samp_cfact <- function(x) {
-            if (nrow(temp_train %>% filter(get(yvar)>= x[squo_var]))!=0) {
-              data <- temp_train %>% filter(get(yvar)>= x[squo_var]) %>% select_(yvar, 'weight')
+          train_samp_cfact <- function(x,ml=maxlen) {
+            # for some reason squo_var turns to string when this function is applied, making sure 
+            # to revert that back to numeric before doing comparison operations.
+            squo_len <- as.numeric(x[squo_var])
+            if (nrow(temp_train %>% filter(get(yvar)> squo_len))!=0) {
+              data <- temp_train %>% filter(get(yvar)> squo_len) %>% select_(yvar, 'weight')
               mean <- weighted.mean(x= data[ ,yvar], w= data[ , 'weight'])
-              return(round(mean))
+              result <- temp_train %>% select(yvar) + mean
+              # top code result at 261 days - how many working days there are in a year, and at program max length, but no less than squo
+              return(max(squo_len,min(result,261,ml)))
             }
             else {
               return(x[squo_var])
@@ -602,16 +613,22 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         # random draw method - take random draw from training sample of lengths less than or equal to
         # the counterfactual leave length
         if (len_method=='rand') {
-          train_samp_cfact <- function(x) {
-            if (nrow(temp_train %>% filter(get(yvar)>= x[squo_var]))!=0) {
-              return(temp_train %>% filter(get(yvar)>= x[squo_var]) %>% sample_n(1, weight = weight) %>% select_(yvar))
+          train_samp_cfact <- function(x,ml=maxlen) {
+            # for some reason squo_var turns to string when this function is applied, making sure 
+            # to revert that back to numeric before doing comparison operations.
+            squo_len <- as.numeric(x[squo_var])
+            if (nrow(temp_train %>% filter(get(yvar)> squo_len))!=0) {
+              result <- temp_train %>% filter(get(yvar)> squo_len) %>% sample_n(1, weight = weight) %>% select_(yvar)
+              # top code result at 261 days - how many working days there are in a year, and at program max length, but no less than squo
+              return(max(squo_len,min(result,261,ml)))
             }
             else {
               return(x[squo_var])
             }
           }
         }
-        # adjust squo lengths by factor to get counterfact lengths for resp_len == 1
+
+        # adjust squo lengths by factor to get counterfact lengths for resp_len == 1z
         temp_test[yvar] <- data.frame(unlist(apply(temp_test, 1, train_samp_cfact)))
         
         # old merge code caused memory issues. using match instead
@@ -620,39 +637,68 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         
         # for the rest, resp_len = 0 and so leave length does not respond to presence or absence of program, 
         # so that variable remains the same
+        if (is.factor(est_df[[yvar]])){
+          est_df[yvar] <- unfactor(est_df[[yvar]])
+        }
         est_df[is.na(est_df[yvar]),yvar] <- est_df[is.na(est_df[yvar]),squo_var]
+        
+        # if leave extension response ratio sensitivity is enabled, interpolate leave length to be somewhere 
+        # between the needed and status quo leave length
+        # prop_pay -> status quo receipt
+        # first, create maximum need length var or "mnl_" var - will be same as yvar if sensitivity not enabled.
+        mnl_var <- sub('length','mnl',yvar)
+        est_df[mnl_var] <- est_df[yvar]
+        est_df[is.na(est_df[mnl_var]),mnl_var] <-0
+        if (rr_sensitive_leave_len==TRUE) {
+          merge_ids <-match(est_df$id,d_test$id)
+          # load variables from test data needed for interpolation
+          est_df['prop_pay'] <- d_test[merge_ids, 'prop_pay'] 
+          est_df['resp_len'] <- d_test[merge_ids, 'resp_len'] 
+          est_df['dual_receiver'] <- d_test[merge_ids, 'dual_receiver'] 
+          # set couterfactual leave taking var equal to Z+ (X-Z)*(rrp-rre)/(1-rre), where:
+          # Z is status quo leave length
+          # X is maximum length needed
+          # rre is the status quo replacement rate (i.e. proportion of pay received)
+          # wage_rr <- wage of program
+          est_df['wage_rr'] <- wage_rr
+          # rrp is max(wage_rr, rre)
+          est_df['rrp'] <- apply(est_df[c('wage_rr','prop_pay')], 1, max)
+          # apply formula to estimate couterfactual leave for single receivers
+          est_df[yvar] <- with(est_df, ifelse(dual_receiver==0,
+              get(squo_var)+ (get(mnl_var)-get(squo_var))*(rrp-prop_pay)/(1-prop_pay),get(yvar)))
+          # formula for dual receivers is the same, except rrp = min(prop_pay+wage_rr, 1)  
+          est_df['rrp_dual'] <- est_df['prop_pay']+est_df['wage_rr']
+          est_df <- est_df %>% mutate(rrp_dual=ifelse(rrp_dual>1,1,rrp_dual))
+          est_df[yvar] <- with(est_df, ifelse(dual_receiver==1,
+                                              get(squo_var)+ (get(mnl_var)-get(squo_var))*(rrp_dual-prop_pay)/(1-prop_pay),get(yvar)))
+
+          # round to nearest whole day
+          est_df[yvar] <- round(est_df[yvar])
+          
+          # get nan/infinity for those with prop_pay=1 b/c of dividing by 0; these are already at maximum needed length,
+          # so we just keep the value the same
+          est_df[is.na(est_df[yvar]),yvar] <- est_df[is.na(est_df[yvar]),mnl_var] 
+          est_df[!is.finite(est_df[[yvar]]),yvar] <- est_df[!is.finite(est_df[[yvar]]),mnl_var] 
+          est_df <- est_df[, !(names(est_df) %in% c('prop_pay','resp_len','wage_rr','rrp','rrp_dual','dual_receiver'))]
+        }
       }
       # if these dataframes are empty, then we only have resp_len = 0 in test and we make the cfact var the same
       # as status quo: their leave length does not respond to presence or absence of program, 
+      
       else {
         est_df[yvar] <- est_df[squo_var]
+        mnl_var <- sub('length','mnl',yvar)
+        est_df[mnl_var] <- est_df[yvar]
       }
     }
     
     # if option not used, counterfactual will start out the same as status quo
     if (ext_resp_len==FALSE) {
       est_df[yvar] <- est_df[squo_var]
+      mnl_var <- sub('length','mnl',yvar)
+      est_df[mnl_var] <- est_df[yvar]
     }
-    
-    # if leave extension response ratio sensitivity is enabled, interpolate leave length to be somewhere 
-    # between the needed and status quo leave length
-    # prop_pay -> status quo receipt
-    # first, create maximum need length var or "mnl_" var - will be same as yvar if sensitivity not enabled.
-    mnl_var <- sub('length','mnl',yvar)
-    est_df[mnl_var] <- est_df[yvar]
-    if (rr_sensitive_leave_len==TRUE) {
-      est_df['prop_pay'] <- d_test[match(est_df$id,d_test$id), 'prop_pay'] 
-      # set leave taking var equal to Z+ (X-Z)*(rrp-rre)/(1-rre), where:
-      # Z is status quo leave length
-      # X is maximum length needed
-      # rrp is the state program wage replacement rate
-      # rre is the status quo replacement rate (i.e. proportion of pay received)
-      est_df[yvar] <- est_df[squo_var] + (est_df[mnl_var]-est_df[squo_var]) * (wage_rr - est_df['prop_pay']) / (1-est_df['prop_pay'])
-      est_df <- est_df[, !(names(est_df) %in% c('prop_pay'))]
-    }
-    
-    
-    return(est_df) 
+     return(est_df) 
   }
 }
 

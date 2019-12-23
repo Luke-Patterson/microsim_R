@@ -24,8 +24,8 @@ for (i in states[,'state_abbr']) {
   # delete objects from previous loop to preserve memory
   rm(d_acs,d_acs_person,d_acs_house)
   # load the file
-  d_acs_person <- read.csv(paste0("./csv_inputs/ss16p",lower_abbr,'.csv'))#,nrows=100)
-  d_acs_house <- read.csv(paste0("./csv_inputs/ss16h",lower_abbr,'.csv'))#,nrows=100)
+  d_acs_person <- read.csv(paste0("./csv_inputs/states/ss16p",lower_abbr,'.csv'))#,nrows=100)
+  d_acs_house <- read.csv(paste0("./csv_inputs/states/ss16h",lower_abbr,'.csv'))#,nrows=100)
   # clean the file
   d_acs <- clean_acs(d_acs_person, d_acs_house, save_csv=FALSE)
   # impute CPS

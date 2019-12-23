@@ -46,7 +46,6 @@ replicate_weights_SE <- function(d, var) {
   total_CI_low= total-total_SE*1.96
   total_CI_high= total+total_SE*1.96
   total_CI=paste("[",format(total_CI_low, digits=2, scientific=FALSE, big.mark=","),",", format(total_CI_high, digits=2, scientific=FALSE, big.mark=","),"]")
-
   # return statistics
   stats= list(var, estimate=x, std_error=SE,confidence_int=CI,CI_low=CI_low,CI_high=CI_high, 
               total=total, total_SE=total_SE,total_CI_low=total_CI_low,total_CI_high=total_CI_high, total_CI=total_CI)

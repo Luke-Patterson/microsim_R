@@ -38,12 +38,35 @@
 #   Leave needers who did not take a leave in the absence of a program, and
 #   who said the reason that they did not take a leave was because they could not afford to
 #   take one, take a leave in the presence of a program.
-LEAVEPROGRAM <- function(d, sens_var) {
+LEAVEPROGRAM <- function(d, sens_var,dual_receiver) {
   for (i in leave_types) {
     take_var=paste0("take_",i)
     need_var=paste0("need_",i)
     d[,take_var] <- ifelse(d[,sens_var]==1 & d[,need_var]==1 & !is.na(d[,sens_var]) & !is.na(d[,need_var]),1,d[,take_var])
   }
+  
+  # generate dual receiver (can receive both state and employer benefits) column based on proportion specified in dual_receiver parameter
+  pop_target <- sum(d$PWGTP)*dual_receiver
+  # guess samp size needed based on mean weighted
+  samp_size <- nrow(d) * dual_receiver
+  samp_idx <- sample(seq_len(nrow(d)), samp_size)
+  # add/remove individuals to get to pop target
+  samp_sum <- sum(d[samp_idx,'PWGTP'])
+  if (samp_sum> pop_target) {
+    while (samp_sum> pop_target) {
+      samp_idx <- samp_idx[2:length(samp_idx)]
+      samp_sum <- sum(d[samp_idx,'PWGTP'])
+    }
+  } else if (samp_sum< pop_target) { 
+    while (samp_sum < pop_target){
+      remain_idx <- setdiff(rownames(d),samp_idx)
+      samp_idx  <- append(samp_idx,remain_idx[2])
+      samp_sum <- sum(d[samp_idx,'PWGTP'])
+    }
+  }
+  # set dual receiver status for
+  d$dual_receiver <- 0
+  d[samp_idx, 'dual_receiver'] <- 1
   
   return(d)
 }
@@ -57,7 +80,9 @@ LEAVEPROGRAM <- function(d, sens_var) {
 # currently impute method is hardcoded as a random draw from a specified distribution of FMLA observations
 # but this is a candidate for modual imputation
 
-impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_resp_len,len_method,rr_sensitive_leave_len,wage_rr) { 
+impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_resp_len,len_method,rr_sensitive_leave_len,wage_rr,
+                                maxlen_DI,maxlen_PFL) { 
+  
   #Days of leave taken - currently takes length from most recent leave only
   yvars <- c(own = "length_own",
               illspouse = "length_illspouse",
@@ -70,11 +95,11 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
   #   receiving some pay from state programs. 
   
   train_filts <- c(own = "length_own>0 & is.na(length_own)==FALSE",
-                   illspouse = "length_illspouse>0 & is.na(length_illspouse)==FALSE & nevermarried == 0 & divorced == 0",
+                   illspouse = "length_illspouse>0 & is.na(length_illspouse)==FALSE ",
                    illchild = "length_illchild>0 & is.na(length_illchild)==FALSE",
                    illparent = "length_illparent>0 & is.na(length_illparent)==FALSE",
-                   matdis = "length_matdis>0 & is.na(length_matdis)==FALSE & female == 1 & nochildren == 0",
-                   bond = "length_bond>0 & is.na(length_bond)==FALSE & nochildren == 0")
+                   matdis = "length_matdis>0 & is.na(length_matdis)==FALSE ",
+                   bond = "length_bond>0 & is.na(length_bond)==FALSE")
   
   test_filts <- c(own = "take_own==1",
                   illspouse = "take_illspouse==1 & nevermarried == 0 & divorced == 0",
@@ -83,12 +108,23 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
                   matdis = "take_matdis==1 & female == 1 & nochildren == 0",
                   bond = "take_bond==1 & nochildren == 0")
 
+  maxlen <- c(own=maxlen_DI,
+              illspouse=maxlen_PFL,
+              illchild=maxlen_PFL,
+              illparent=maxlen_PFL,
+              matdis=maxlen_DI,
+              bond=maxlen_PFL)
   # using random draw from leave distribution rather than KNN prediction for computational issues
   #INPUTS: variable requiring imputation, conditionals to filter test and training data on,
   #        ACS or FMLA observations requiring imputed leave length (test data), FMLA observations constituting the
   #        sample from which to impute length from (training data), and presence/absence of program
-  predict <- mapply(runRandDraw, yvar=yvars, train_filt=train_filts,test_filt=test_filts,
-                    MoreArgs = list(d_train=d_train, d_test=d_test, ext_resp_len=ext_resp_len, 
+  
+  # using actual leave length distribution data since FMLA only gives ranges of leave lengths
+  d_lens <- read.csv('./csv_inputs/leave_length_dist.csv')
+  
+  
+  predict <- mapply(runRandDraw, yvar=yvars, train_filt=train_filts,test_filt=test_filts, maxlen=maxlen,
+                    MoreArgs = list(d_train=d_lens, d_test=d_test, ext_resp_len=ext_resp_len, 
                                     len_method= len_method,rr_sensitive_leave_len=rr_sensitive_leave_len,
                                     wage_rr=wage_rr)
                                     , SIMPLIFY = FALSE)
@@ -128,11 +164,13 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
   
   for (i in leave_types) {
     len_var=paste("length_",i,sep="")
+    mnl_var=paste("mnl_",i,sep="")
     squo_var=paste0('squo_', len_var)
     take_var=paste("take_",i,sep="")
     d_test[len_var] <- with(d_test, ifelse(is.na(get(len_var)),0,get(len_var)))
     d_test[take_var] <- with(d_test, ifelse(is.na(get(take_var)),0,get(take_var)))
     d_test[squo_var] <- with(d_test, ifelse(is.na(get(squo_var)),0,get(squo_var)))
+    d_test[mnl_var] <- with(d_test, ifelse(is.na(get(mnl_var)),0,get(mnl_var)))
   }
   return(d_test)
 }
@@ -192,8 +230,9 @@ PAY_SCHEDULE <- function(d) {
   # Prob of 3rd pay schedule - some pay, some weeks
   # Neither paid each pay period, nor receive full pay when they did receive pay.
   Neither_paid=1-Fully_paid
-  
   d_prob=data.frame(Total_paid,Always_paid,Fully_paid,Neither_paid)
+  d_prob$Total_paid=unfactor(d_prob$Total_paid)
+  
   
   # denote bucket of proportion of pay
   d <- d %>% mutate(Total_paid= ifelse(prop_pay>0 & prop_pay<.5,"Less than half",NA))
@@ -201,8 +240,8 @@ PAY_SCHEDULE <- function(d) {
   d <- d %>% mutate(Total_paid= ifelse(prop_pay>.5 & prop_pay<1, "More than half",Total_paid))
   
   # merge probabilities in
-  d <- join(d,d_prob, type="left",match="all",by=c("Total_paid"))
-  
+  d <- plyr::join(d,d_prob, type="left",match="all",by="Total_paid")
+
   # assign pay schedules
   d['rand']=runif(nrow(d))
   d['rand2']=runif(nrow(d))
@@ -259,7 +298,7 @@ ELIGIBILITYRULES <- function(d, earnings=NULL, weeks=NULL, ann_hours=NULL, minsi
   }
   
   # replace terms in logic string with appropriate conditionals
-  elig_rule_logic <- gsub('earnings','WAGP>=earnings',elig_rule_logic)
+  elig_rule_logic <- gsub('earnings','wage12>=earnings',elig_rule_logic)
   elig_rule_logic <- gsub('weeks','weeks_worked>=weeks',elig_rule_logic)
   elig_rule_logic <- gsub('ann_hours','weeks_worked*WKHP>=ann_hours',elig_rule_logic)
   elig_rule_logic <- gsub('minsize','emp_size>=minsize',elig_rule_logic)
@@ -310,30 +349,7 @@ ELIGIBILITYRULES <- function(d, earnings=NULL, weeks=NULL, ann_hours=NULL, minsi
   # simulating participation decision. We're creating a throwaway bene_prop variable, 
   # as we still want to use actual bene_prop for determining benefits received, then will 
   # increase weekly payments at the end after all participation is determined.
-  d <- d %>% mutate(benefit_prop_temp = max(week_bene_min/(WAGP/weeks_worked), benefit_prop))
-  
-  # generate dual receiver (can receive both state and employer benefits) column based on proportion specified in dual_receiver parameter
-  pop_target <- sum(d$PWGTP)*dual_receiver
-  # guess samp size needed based on mean weighted
-  samp_size <- nrow(d) * dual_receiver
-  samp_idx <- sample(seq_len(nrow(d)), samp_size)
-  # add/remove individuals to get to pop target
-  samp_sum <- sum(d[samp_idx,'PWGTP'])
-  if (samp_sum> pop_target) {
-    while (samp_sum> pop_target) {
-      samp_idx <- samp_idx[2:length(samp_idx)]
-      samp_sum <- sum(d[samp_idx,'PWGTP'])
-    }
-  } else if (samp_sum< pop_target) { 
-    while (samp_sum < pop_target){
-      remain_idx <- setdiff(rownames(d),samp_idx)
-      samp_idx  <- append(samp_idx,remain_idx[2])
-      samp_sum <- sum(d[samp_idx,'PWGTP'])
-    }
-  }
-  # set dual receiver status for
-  d$dual_receiver <- 0
-  d[samp_idx, 'dual_receiver'] <- 1
+  d <- d %>% mutate(benefit_prop_temp = pmax(week_bene_min/(wage12/weeks_worked), benefit_prop))
   
   # calculate general participation decision based on employer pay vs state program pay    
   # those who will receive more under the program and are not dual receivers will participate
@@ -344,8 +360,7 @@ ELIGIBILITYRULES <- function(d, earnings=NULL, weeks=NULL, ann_hours=NULL, minsi
   d["particip"] <- ifelse(d[,"eligworker"]==1 & !is.na(d[,'exhausted_by']) & d[,'dual_receiver']==0,1,d[,"particip"])  
   
   # dual receiver will participate regardless of employer benefits
-  d["particip"] <- ifelse(d[,"eligworker"]==1 & d[,'dual_receiver']==1,1,0)    
-  
+  d["particip"] <- ifelse(d[,"eligworker"]==1 & d[,'dual_receiver']==1,1,d[,'particip'])    
   return(d)  
 }
 
@@ -415,8 +430,8 @@ FORMULA <- function(d, formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_
   if (!is.null(formula_prop_cuts)) {
     
     # establish mean wage of population, and everyone's proportion of that value
-    mean_wage=mean(d$WAGP/d$weeks_worked)
-    d['mean_wage_prop']=(d$WAGP/d$weeks_worked)/mean_wage
+    mean_wage=mean(d$wage12/d$weeks_worked)
+    d['mean_wage_prop']=(d$wage12/d$weeks_worked)/mean_wage
     
     # adjust benefit_prop accordingly
     # first interval of formula_bene_levels
@@ -446,10 +461,10 @@ FORMULA <- function(d, formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_
     # first interval of formula_bene_levels
     len_cuts=length(formula_value_cuts)
     len_lvls=length(formula_bene_levels)
-    d <- d %>% mutate(benefit_prop = ifelse(formula_value_cuts[1]>WAGP, 
+    d <- d %>% mutate(benefit_prop = ifelse(formula_value_cuts[1]>wage12, 
                                             formula_bene_levels[1], benefit_prop))
     # last interval 
-    d <- d %>% mutate(benefit_prop = ifelse(formula_value_cuts[len_cuts]<=WAGP, 
+    d <- d %>% mutate(benefit_prop = ifelse(formula_value_cuts[len_cuts]<=wage12, 
                                             formula_bene_levels[len_lvls], benefit_prop))
     
     # rest of the intervals in between
@@ -457,7 +472,7 @@ FORMULA <- function(d, formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_
     lvl=1
     for (i in formula_value_cuts[2:len_cuts]) {
       lvl=lvl+1
-      d <- d %>% mutate(benefit_prop = ifelse(i>WAGP & prev_val<=WAGP,
+      d <- d %>% mutate(benefit_prop = ifelse(i>wage12 & prev_val<=wage12,
                                               formula_bene_levels[lvl], benefit_prop))
       prev_val=i
     }
@@ -469,7 +484,7 @@ FORMULA <- function(d, formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_
 # 5. EXTENDLEAVES
 # ============================ #
 
-# Option to simulate extension of leaves in the presence of an FMLA program
+# Replication of ACM Model Options to simulate extension of leaves in the presence of an FMLA program
 
 EXTENDLEAVES <-function(d_train, d_test,wait_period, ext_base_effect, 
                         extend_prob, extend_days, extend_prop, fmla_protect) {
@@ -628,7 +643,7 @@ EXTENDLEAVES <-function(d_train, d_test,wait_period, ext_base_effect,
 
 
 UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
-                   illspouse_uptake, illchild_uptake, full_particip_needer, wait_period, 
+                   illspouse_uptake, illchild_uptake, full_particip, wait_period, 
                    maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
                    maxlen_total, maxlen_DI, maxlen_PFL,dual_receiver) {
   
@@ -636,34 +651,67 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
   d['particip_length']=0
   for (i in leave_types) {
     take_var=paste("take_",i,sep="")
+    need_var=paste("need_",i,sep="")
     uptake_val=paste(i,"_uptake",sep="")
     uptake_var=paste0('takes_up_',i)
     plen_var= paste("plen_",i, sep="")
     
     # generate uptake column based on uptake val
-    pop_target <- sum(d$PWGTP)*get(uptake_val)
-    # guess samp size needed based on mean weighted
-    samp_size <- nrow(d) * get(uptake_val)
-    samp_idx <- sample(seq_len(nrow(d)), samp_size)
+    elig_d <- d %>% filter(eligworker==1)
+    pop_target <- sum(elig_d %>% select(PWGTP))*get(uptake_val)
+    # filter to only those eligible for the program and taking or needing leave
+    samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1))
+    # guess samp size needed based on number of rows and uptake value
+    samp_size <- round(nrow(elig_d) * get(uptake_val))
+    # if full pariticipation is enabled, take the entire sample
+    adj_sample <- TRUE
+    if (full_particip==TRUE) {
+      samp_idx <- rownames(samp_frame)
+    # check to see if there's enough sample to do this draw
+    } else if (nrow(samp_frame)>=samp_size) {
+      samp_idx <- sample(rownames(samp_frame), samp_size)
+    # if not, just take all needers/takers
+    } else {
+      samp_idx <- rownames(samp_frame)
+      adj_sample <- FALSE
+      print(paste('Warning: insufficient sample for', i, 'leave type. Using all',i,'takers/needers.'))
+      print(paste(nrow(samp_frame),' taker/needer rows available.'))
+      print(paste(samp_size,' taker/needer rows needed to meet requested uptake rate of',uptake_val))
+    }
+    # now <- Sys.time()
     # add/remove individuals to get to pop target
-    samp_sum <- sum(d[samp_idx,'PWGTP'])
-    if (samp_sum> pop_target) {
-      while (samp_sum> pop_target) {
-        samp_idx <- samp_idx[2:length(samp_idx)]
-        samp_sum <- sum(d[samp_idx,'PWGTP'])
-      }
-    } else if (samp_sum< pop_target) { 
-      while (samp_sum < pop_target){
-        remain_idx <- setdiff(rownames(d),samp_idx)
-        samp_idx  <- append(samp_idx,remain_idx[2])
-        samp_sum <- sum(d[samp_idx,'PWGTP'])
+    samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
+    #time_elapsed('before pop target')
+    if (adj_sample==TRUE){ 
+      if (samp_sum> pop_target) {
+        while (samp_sum> pop_target & length(samp_idx)!=0) {
+          samp_idx <- samp_idx[2:length(samp_idx)]
+          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
+        }
+      } else if (samp_sum< pop_target) { 
+        while (samp_sum < pop_target & length(samp_idx)!=0){
+          # shuffle remaining idx's
+          remain_idx <- sample(setdiff(rownames(samp_frame),samp_idx))
+          samp_idx  <- append(samp_idx,remain_idx[2])
+          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
+        }
       }
     }
-    browser()
-    # set uptake status for leave type
-    d[,uptake_var] <- 0
-    d[samp_idx, uptake_var] <- 1
+    samp_selected <- samp_frame[samp_idx,]
+    samp_selected[uptake_var] <- 1
+    # print('time taken for sampling addition')
+    # print(Sys.time()-now)
+    #time_elapsed('after pop target')
     
+    # set uptake status for leave type by merging in uptake var from samp_selected
+    d[uptake_var] <- samp_selected[match(d$id, samp_selected$id), uptake_var] 
+    d[is.na(d[uptake_var]),uptake_var] <- 0
+    
+    # ensure any leave needers are now indicated as taking leave
+    
+    d[take_var] <- with(d, ifelse(get(uptake_var)==1, 1, get(take_var)))
+  
+      # update/create participation vars
     d <- d %>% mutate(particip_length=ifelse(wait_period<get(paste('length_',i,sep="")) &
                                                get(uptake_var)==1 & particip==1 & get(paste(take_var)) == 1, 
                                              particip_length+get(paste('length_',i,sep=""))-wait_period, particip_length))
@@ -673,31 +721,33 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     d <- d %>% mutate(change_flag=ifelse(wait_period<get(paste('length_',i,sep="")) &
                                            get(uptake_var)==1 & particip==1 & get(paste(take_var)) == 1,1,0))
     
+    # OBSOLETE: full_particip handled above
     # Option for if leave needers always take up benefits when they receive more than their employer pays in leave
-    if (full_particip_needer==TRUE) {
-      d <- d %>% mutate(particip_length=ifelse(wait_period<get(paste('length_',i,sep="")) &
-                                                 get(uptake_var)==1 & particip==1 & get(paste(take_var))== 1 & resp_len==1, 
-                                               particip_length+get(paste('length_',i,sep=""))-wait_period, particip_length))
-      d[plen_var] <- with(d, ifelse(wait_period<get(paste('length_',i,sep="")) &
-                                      get(uptake_var)==1 & particip==1 & get(paste(take_var))== 1 & resp_len==1, 
-                                    get(paste('length_',i,sep=""))-wait_period, get(plen_var)))
-      d <- d %>% mutate(change_flag=ifelse(wait_period<get(paste('length_',i,sep="")) &
-                                             get(uptake_var)==1 & particip==1 & get(paste(take_var))== 1 & resp_len==1,1, change_flag))  
-    }
+    # if (full_particip==TRUE) {
+    #   d <- d %>% mutate(particip_length=ifelse(wait_period<get(paste('length_',i,sep="")) &
+    #                                              get(uptake_var)==1 & particip==1 & get(paste(take_var))== 1 & resp_len==1, 
+    #                                            particip_length+get(paste('length_',i,sep=""))-wait_period, particip_length))
+    #   d[plen_var] <- with(d, ifelse(wait_period<get(paste('length_',i,sep="")) &
+    #                                   get(uptake_var)==1 & particip==1 & get(paste(take_var))== 1 & resp_len==1, 
+    #                                 get(paste('length_',i,sep=""))-wait_period, get(plen_var)))
+    #   d <- d %>% mutate(change_flag=ifelse(wait_period<get(paste('length_',i,sep="")) &
+    #                                          get(uptake_var)==1 & particip==1 & get(paste(take_var))== 1 & resp_len==1,1, change_flag))  
+    # }
     
     # subtract days spent on employer benefits from those that exhausting employer benefits (received pay for some days of leave)
     # Also accounting for wait period here, as that can tick down as a person is still collecting employer benefits
     # only if not a dual receiver (can't receive both employer and state benefits)
-      d <- d %>% mutate(particip_length= ifelse(change_flag==1 & !is.na(exhausted_by) & dual_receiver==1,
-                                              ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
+    d <- d %>% mutate(particip_length= ifelse(change_flag==1 & !is.na(exhausted_by) & dual_receiver==0,
+                                            ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
                                                      particip_length - exhausted_by + wait_period, particip_length), particip_length))
-    d[plen_var] <- with(d, ifelse(change_flag==1 & !is.na(exhausted_by)& dual_receiver==1,
+    d[plen_var] <- with(d, ifelse(change_flag==1 & !is.na(exhausted_by)& dual_receiver==0,
                                   ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
                                          get(plen_var) - exhausted_by + wait_period, get(plen_var)), get(plen_var)))
   }
-  
+
   # make sure those with particip_length 0 are also particip 0
   d <- d %>% mutate(particip= ifelse(particip_length==0,0, particip))
+
   
   # cap particip_length at max program days
   # INPUT: ACS data set
@@ -781,12 +831,12 @@ check_caps <- function(d,maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparen
 BENEFITS <- function(d) {
   
   # base benefits received from program
-  d <- d %>% mutate(base_benefits=WAGP/(round(weeks_worked*5))*particip_length*benefit_prop)
+  d <- d %>% mutate(base_benefits=wage12/(round(weeks_worked*5))*particip_length*benefit_prop)
   d <- d %>% mutate(base_benefits=ifelse(is.na(base_benefits),0,base_benefits))
 
     # base pay received from employer based on schedule
   # pay received is same across all pay schedules
-  d <- d %>% mutate(base_leave_pay=WAGP/(round(weeks_worked*5))*total_length* prop_pay)
+  d <- d %>% mutate(base_leave_pay=wage12/(round(weeks_worked*5))*total_length* prop_pay)
   d <- d %>% mutate(base_leave_pay=ifelse(is.na(base_leave_pay),0,base_leave_pay))
   
   # actual pay and benefits - to be modified by remaining parameter functions
@@ -836,7 +886,7 @@ BENEFITEFFECT <- function(d) {
   
   # PLACEHOLDER dealing with missing faminc values for the test ACS data set.
   # need to come up with systematic way of addressing missing values in ACS eventually
-  d <- d %>% mutate(faminc=ifelse(is.na(faminc),WAGP,faminc))
+  d <- d %>% mutate(faminc=ifelse(is.na(faminc),wage12,faminc))
   
   # define family income to match 2001 Westat survey categories
   d <- d %>% mutate(finc_cat=ifelse(faminc<=10000,10000,NA))
@@ -911,7 +961,7 @@ TOPOFF <- function(d, topoff_rate, topoff_minlength) {
   # recalculate benefits based on updated participation length
   # actual benefits received from program
   # note: topoff will override benefiteffect changes
-  d <- d %>% mutate(actual_benefits=WAGP/(round(weeks_worked*5))*particip_length*benefit_prop)
+  d <- d %>% mutate(actual_benefits=wage12/(round(weeks_worked*5))*particip_length*benefit_prop)
   d <- d %>% mutate(actual_benefits=ifelse(is.na(actual_benefits),0,actual_benefits))
   
   #subtract benefits from pay
@@ -992,7 +1042,7 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
   
   # cap benefits payments as a function of mean weekly wage in the population
   if (!is.null(week_bene_cap_prop)) {
-    cap <- mean(d$WAGP/d$weeks_worked)*week_bene_cap_prop
+    cap <- mean(d$wage12/d$weeks_worked)*week_bene_cap_prop
     d <- d %>% mutate(actual_benefits= ifelse(actual_benefits>ceiling(cap*particip_length)/5,
                                               ceiling(cap*particip_length)/5, actual_benefits))
   }
@@ -1003,17 +1053,6 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
   
   # make sure those with particip_length 0 are also particip 0
   d <- d %>% mutate(particip= ifelse(particip_length==0,0, particip))
-  
-  # create taker and needer vars
-  d['taker'] <- 0
-  d['needer'] <- 0
-  for (i in leave_types) {
-    take_var <- paste0('take_',i)
-    need_var <- paste0('need_',i)
-    d <- d %>% mutate(taker=ifelse(get(take_var)==1,1,taker))
-    d <- d %>% mutate(needer=ifelse(get(take_var)==1,1,taker))
-  }
-  
   
   # calculate leave specific benefits
   d['ptake_PFL'] <-0
@@ -1052,10 +1091,22 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
     if (i=='bond'|i=='illspouse'|i=='illparent'|i=='illchild') {
       d['ptake_PFL'] <- with(d, ifelse(get(ben_var)>0 & get(take_var)>0,1,ptake_PFL))  
     }
+    # create taker and needer vars
+    d['taker'] <- 0
+    d['needer'] <- 0
+    for (i in leave_types) {
+      take_var <- paste0('take_',i)
+      need_var <- paste0('need_',i)
+      d <- d %>% mutate(taker=ifelse(get(take_var)==1,1,taker))
+      d <- d %>% mutate(needer=ifelse(get(need_var)==1,1,needer))
+    }
+    d$needer[is.na(d$needer)] <- 0
+    
     # clean up vars
     uptake_var=paste0('takes_up_',i)
     d <- d[, !(names(d) %in% c(uptake_var))]
   }
+  
   return(d)
 }
 

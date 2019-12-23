@@ -2,9 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
-csv_inputs
-output/CA.csv
-output/NJ.csv
+csv_inputs/states
+output
+logs
 10312019_R_Microsim_Model
 R_dataframes/resid_states/CA_resid.rds
 R_dataframes/resid_work/CA_work.rds

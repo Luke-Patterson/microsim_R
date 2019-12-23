@@ -8,6 +8,14 @@
 # Luke
 # 
 # """
+
+# ----------Helper function for measuring time elapsed
+time_elapsed <<- function(msg) {
+  print(msg)
+  print(Sys.time()-timestart)
+  browser()
+}  
+
 # ----------master function that sets policy scenario, and calls functions to alter FMLA data to match policy scenario---------------------
 # see parameter documentation for details on arguments
 
@@ -27,13 +35,13 @@ policy_simulation <- function(saveCSV=FALSE,
                               # default is 1's for everything
                               xvar_wgts = rep(1,length(xvars)),
                               base_bene_level=1, topoff_rate=0, topoff_minlength=0, sample_prop=NULL, sample_num=NULL,
-                              bene_effect=FALSE, dependent_allow=0, full_particip_needer=FALSE, 
+                              bene_effect=FALSE, dependent_allow=0, full_particip=FALSE, 
                               own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, 
                               illparent_uptake=.25, illspouse_uptake=.25, illchild_uptake=.25, wait_period=0,
                               own_elig_adj=1, illspouse_elig_adj=1, illchild_elig_adj=1, 
                               illparent_elig_adj=1, matdis_elig_adj=1, bond_elig_adj=1,
                               clone_factor=1, sens_var = 'resp_len', progalt_post_or_pre ='post',
-                              ext_resp_len = FALSE, len_method = 'mean', 
+                              ext_resp_len = TRUE, len_method = 'rand', 
                               rr_sensitive_leave_len=TRUE,
                               place_of_work = FALSE,
                               state = '',
@@ -45,7 +53,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               fmla_protect=TRUE, earnings=NULL, weeks= NULL, ann_hours=NULL, minsize= NULL, 
                               elig_rule_logic= '(earnings & weeks & ann_hours & minsize)',
                               formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_bene_levels=NULL,
-                              output='output', output_stats=NULL, random_seed=123) { 
+                              output='output', output_stats=NULL, random_seed=123, runtime_measure=0) { 
   
   
   ####################################
@@ -62,7 +70,7 @@ policy_simulation <- function(saveCSV=FALSE,
     params['params'] <- NULL
     
     # create log file and record starting parameters 
-    log_name <<- paste0('./logs/', output,' ', format(Sys.time(), "%Y-%m-%d %H.%M.%S"), '.log')
+    log_name <<- paste0('./logs/',format(Sys.time(), "%Y-%m-%d %H.%M.%S"), '_',output, '.log')
     file.create(log_name)
     cat("==============================", file = log_name, sep="\n")
     cat("Microsim Log File", file = log_name, sep="\n", append = TRUE)
@@ -91,7 +99,7 @@ policy_simulation <- function(saveCSV=FALSE,
     return("OK")
   }
   
-  global.libraries <- c('DMwR','xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
+  global.libraries <- c('readr','tibble','DMwR','xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
                         'survey', 'class', 'dummies', 'varhandle', 'oglmx', 
                         'foreign', 'ggplot2', 'reshape2','e1071','pander','ridge')
   
@@ -121,7 +129,7 @@ policy_simulation <- function(saveCSV=FALSE,
    else {
      d_acs <- readRDS(paste0("./R_dataframes/resid_states/",state,"_resid.rds"))  
    }
-
+   
   #-----CPS to ACS Imputation-----
    #already done on R_dataframes, don't need to run here any more
    
@@ -158,7 +166,7 @@ policy_simulation <- function(saveCSV=FALSE,
   #                  Uptake behavior and benefit calculations.
   
   # define global values for use across functions
-  leave_types <<- c("own","illspouse","illchild","illparent","matdis","bond")
+  leave_types <<- c("own","matdis","bond","illchild","illspouse","illparent")
   
   # preserve original copy of FMLA survey
   d_fmla_orig <- d_fmla 
@@ -167,7 +175,7 @@ policy_simulation <- function(saveCSV=FALSE,
   # INPUT: FMLA data
   # In presence of program, apply leave-taking behavioral updates
   if (progalt_post_or_pre == 'pre') {
-    d_fmla <-LEAVEPROGRAM(d_fmla, sens_var)
+    d_fmla <-LEAVEPROGRAM(d_fmla, sens_var,dual_receiver)
   }
   # OUTPUT: FMLA data with adjusted take_leave columns to include 1s
   #         for those that would have taken leave if they could afford it
@@ -184,14 +192,22 @@ policy_simulation <- function(saveCSV=FALSE,
   d_acs_imp <- impute_fmla_to_acs(d_fmla,d_acs, impute_method, xvars, kval, xvar_wgts)  
   # OUTPUT: ACS data with imputed values for a) leave taking and needing, b) proportion of pay received from
   #         employer while on leave, and c) whether leave needed was not taken due to unaffordability 
+  if (runtime_measure==1){
+    time_elapsed('finished fmla to acs imputation')
+  }
 
   # -------------Post-imputation functions-----------------
   # adjust for program's base behavioral effect on leave taking
   # INPUT: FMLA data
   # In presence of program, apply leave-taking behavioral updates
   if (progalt_post_or_pre == 'post') {
-    d_acs_imp <-LEAVEPROGRAM(d_acs_imp, sens_var)
+    d_acs_imp <-LEAVEPROGRAM(d_acs_imp, sens_var,dual_receiver)
   }
+  
+  if (runtime_measure==1){
+    time_elapsed('finished LEAVEPROGRAM function')
+  }
+  
   # OUTPUT: FMLA data with adjusted take_leave columns to include 1s
   #         for those that would have taken leave if they could afford it
   
@@ -205,9 +221,11 @@ policy_simulation <- function(saveCSV=FALSE,
   #         would produced a biased 
   #         estimate of leave length
   d_acs_imp <- impute_leave_length(d_fmla_orig, d_acs_imp, conditional, test_conditional, ext_resp_len,
-                                   len_method, rr_sensitive_leave_len,base_bene_level)
+                                   len_method, rr_sensitive_leave_len,base_bene_level,maxlen_DI,maxlen_PFL)
   # OUTPUT: ACS data with lengths for leaves imputed
-  
+  if (runtime_measure==1){
+    time_elapsed('finished imputing leave length')
+  }
   # function interactions description (may not be complete, just writing as they come to me):
   # ELIGIBILITYRULES: eligibility rules defined, and participation initially set 
   # UPTAKE: Uptake probability values applied
@@ -219,6 +237,10 @@ policy_simulation <- function(saveCSV=FALSE,
   # Allow for users to clone ACS individuals 
   # INPUT: ACS file
   d_acs_imp <- CLONEFACTOR(d_acs_imp, clone_factor)
+  if (runtime_measure==1){
+    time_elapsed('finished clonefactor')
+  }
+  
   # OUTPUT: ACS file with user-specifed number of cloned records
 
   # Assign employer pay schedule for duration of leaves via imputation from Westat 2001 survey probabilities
@@ -226,6 +248,10 @@ policy_simulation <- function(saveCSV=FALSE,
   # to leave program for remainder of their leave
   # INPUT: ACS file
   d_acs_imp <- PAY_SCHEDULE(d_acs_imp)
+  if (runtime_measure==1){
+    time_elapsed('applying pay schedule')
+  }
+  
   # OUTPUT: ACS file with imputed pay schedule, and date of benefit exhaustion for those with partial pay
   
   # Program eligibility and uptake functions
@@ -234,37 +260,57 @@ policy_simulation <- function(saveCSV=FALSE,
                                formula_prop_cuts, formula_value_cuts, formula_bene_levels, elig_rule_logic,
                                FEDGOV, STATEGOV, LOCALGOV, SELFEMP,PRIVATE,dual_receiver) 
   # OUTPUT: ACS file with program eligibility and base program take-up indicators
+  if (runtime_measure==1){
+    time_elapsed('finished applying eligbility rules')
+  }
   
   # Option to extend leaves under leave program 
     # INPUT: ACS file
     d_acs_imp <- EXTENDLEAVES(d_fmla, d_acs_imp, wait_period, ext_base_effect, 
                               extend_prob, extend_days, extend_prop, fmla_protect)  
+  if (runtime_measure==1){
+    time_elapsed('finished applying ACM extended leaves')
+  }
+  
     # OUTPUT: ACS file with leaves extended based on user specifications
 
   # INPUT: ACS file
   d_acs_imp <-UPTAKE(d_acs_imp, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
-                     illspouse_uptake, illchild_uptake, full_particip_needer, wait_period,
+                     illspouse_uptake, illchild_uptake, full_particip, wait_period,
                      maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
                      maxlen_total,maxlen_DI,maxlen_PFL,dual_receiver)
   # OUTPUT: ACS file with modified leave program variables based on user-specified program restrictions
   #         on maximum participation length and user-specified take-up rate assumptions
   
-  
+  if (runtime_measure==1){
+    time_elapsed('finished applying uptake rates')
+  }
   # benefit parameter functions
   # INPUT: ACS file
   d_acs_imp <- BENEFITS(d_acs_imp)
+  if (runtime_measure==1){
+    time_elapsed('finished calculating benefits')
+  }
+  
   # OUTPUT: ACS file with base employer pay and program benefit calculation variables
   
   if (bene_effect==TRUE) {
     # INPUT: ACS file
     d_acs_imp <- BENEFITEFFECT(d_acs_imp)
     # OUTPUT: ACS file with leave taking variables modified to account for behavioral cost of applying to program
+    if (runtime_measure==1){
+      time_elapsed('finished calculating benefit effect')
+    }
   }
   
   if (topoff_rate>0) {
     # INPUT: ACS file
     d_acs_imp <- TOPOFF(d_acs_imp,topoff_rate, topoff_minlength)
     # OUTPUT: ACS file with leave taking variables modified to account for employer top-off effects
+    if (runtime_measure==1){
+      time_elapsed('finished applying topoff effect')
+    }
+    
   }
   
   if (dependent_allow>0) {
@@ -281,6 +327,9 @@ policy_simulation <- function(saveCSV=FALSE,
   d_acs_imp <- CLEANUP(d_acs_imp, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_own, maxlen_matdis, maxlen_bond, 
                        maxlen_illparent, maxlen_illspouse, maxlen_illchild, maxlen_total,maxlen_DI,maxlen_PFL)
   # OUTPUT: ACS file with finalized leave taking, program uptake, and benefits received variables
+  if (runtime_measure==1){
+    time_elapsed('finished clean up')
+  }
   
   
   # Options to output final data and summary statistics
