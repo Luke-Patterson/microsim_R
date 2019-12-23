@@ -31,6 +31,7 @@
                               dual_receiver = 1,
                               ext_resp_len = TRUE, 
                               ext_base_effect=TRUE,
+                              rr_sensitive_leave_len=FALSE,
                               bene_effect=FALSE, wait_period=5, full_particip=FALSE, clone_factor=1, week_bene_cap=795, week_bene_min=89,
                               dependent_allow = 10,
                               own_uptake=.0704, matdis_uptake=.0235, bond_uptake=.0092, illparent_uptake=.0008,
