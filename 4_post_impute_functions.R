@@ -50,18 +50,19 @@ LEAVEPROGRAM <- function(d, sens_var,dual_receiver) {
   # guess samp size needed based on mean weighted
   samp_size <- nrow(d) * dual_receiver
   samp_idx <- sample(seq_len(nrow(d)), samp_size)
+  # make sure there aren't any
   # add/remove individuals to get to pop target
   samp_sum <- sum(d[samp_idx,'PWGTP'])
   if (samp_sum> pop_target) {
     while (samp_sum> pop_target) {
       samp_idx <- samp_idx[2:length(samp_idx)]
-      samp_sum <- sum(d[samp_idx,'PWGTP'])
+      samp_sum <- sum(d[samp_idx,'PWGTP'],na.rm=TRUE)
     }
   } else if (samp_sum< pop_target) { 
     while (samp_sum < pop_target){
       remain_idx <- setdiff(rownames(d),samp_idx)
       samp_idx  <- append(samp_idx,remain_idx[2])
-      samp_sum <- sum(d[samp_idx,'PWGTP'])
+      samp_sum <- sum(d[samp_idx,'PWGTP'],na.rm=TRUE)
     }
   }
   # set dual receiver status for
@@ -94,12 +95,12 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
   #   Leave lengths are the same, except for own leaves, which are instead taken from the distribution of leave takers in FMLA survey reporting 
   #   receiving some pay from state programs. 
   
-  train_filts <- c(own = "length_own>0 & is.na(length_own)==FALSE",
-                   illspouse = "length_illspouse>0 & is.na(length_illspouse)==FALSE ",
-                   illchild = "length_illchild>0 & is.na(length_illchild)==FALSE",
-                   illparent = "length_illparent>0 & is.na(length_illparent)==FALSE",
-                   matdis = "length_matdis>0 & is.na(length_matdis)==FALSE ",
-                   bond = "length_bond>0 & is.na(length_bond)==FALSE")
+  train_filts <- c(own = "length_own>0 & is.na(length_own)==FALSE & recStatePay==0",
+                   illspouse = "length_illspouse>0 & is.na(length_illspouse)==FALSE & recStatePay==0",
+                   illchild = "length_illchild>0 & is.na(length_illchild)==FALSE & recStatePay==0",
+                   illparent = "length_illparent>0 & is.na(length_illparent)==FALSE & recStatePay==0",
+                   matdis = "length_matdis>0 & is.na(length_matdis)==FALSE & recStatePay==0",
+                   bond = "length_bond>0 & is.na(length_bond)==FALSE & recStatePay==0")
   
   test_filts <- c(own = "take_own==1",
                   illspouse = "take_illspouse==1 & nevermarried == 0 & divorced == 0",
@@ -680,20 +681,21 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     }
     # now <- Sys.time()
     # add/remove individuals to get to pop target
-    samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
+    samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
+    
     #time_elapsed('before pop target')
     if (adj_sample==TRUE){ 
       if (samp_sum> pop_target) {
         while (samp_sum> pop_target & length(samp_idx)!=0) {
           samp_idx <- samp_idx[2:length(samp_idx)]
-          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
+          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
         }
       } else if (samp_sum< pop_target) { 
         while (samp_sum < pop_target & length(samp_idx)!=0){
           # shuffle remaining idx's
           remain_idx <- sample(setdiff(rownames(samp_frame),samp_idx))
           samp_idx  <- append(samp_idx,remain_idx[2])
-          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
+          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
         }
       }
     }

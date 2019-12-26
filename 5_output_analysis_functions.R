@@ -108,13 +108,17 @@ state_compar_stats <-function(d, output) {
   
   ptake_vars=c()
   ptake_names=c()
+  plen_vars=c()
+  plen_names=c()
   for (i in leave_types) {
     ptake_vars=c(ptake_vars,paste("ptake_",i,sep=""))
     ptake_names=c(ptake_names, paste("Participated for",i,'leave'))
+    plen_vars=c(plen_vars,paste("plen_",i,sep=""))
+    plen_names=c(plen_names, paste("Num of Weeks Participated for",i,'leave'))
   }
   
   # define columns of csv
-  vars=c(ptake_vars, 'ptake_DI','ptake_PFL', 'particip','bene_DI','bene_PFL', 'actual_benefits')
+  vars=c('eligworker',ptake_vars, 'ptake_DI','ptake_PFL', 'particip',plen_vars,'DI_plen','PFL_plen','bene_DI','bene_PFL', 'actual_benefits')
   mean=c()
   SE=c()
   CI=c()
@@ -138,10 +142,30 @@ state_compar_stats <-function(d, output) {
   total_SE=unname(unlist(total_SE))
   total_CI=unname(unlist(total_CI))
   
-  var_names=c(ptake_names, 'Participated for  for own illness or maternal disability leave', 'Participated for ill relative or child bonding leave', 'Participated for any reason',
-              'Benefits Received ($), for own illness or maternal disability leave','Benefits Received ($), for for ill relative or child bonding leave',
+  var_names=c('Workers eligible for leave program',
+      ptake_names, 'Participated for own illness or maternal disability leave', 'Participated for ill relative or child bonding leave', 'Participated for any reason',
+      plen_names, 'Num of Weeks Participated for own illness or maternal disability leave', 'Num of Weeks Participated for ill relative or child bonding leave', 
+      'Benefits Received ($), for own illness or maternal disability leave','Benefits Received ($), for for ill relative or child bonding leave',
               'Benefits Received ($), total')
   d_out=data.frame(var_names,mean,SE,CI,total, total_SE, total_CI)
+  # manipulate the length ofparticipation vars
+  # transform means to only include those with >0 length, then divide by 5 to match format of state actual data output
+  for (j in c('mean','SE')) {
+    for (i in leave_types ) {
+      d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j]/5/
+        d_out[d_out$var_names==paste('Participated for', i, 'leave'),'mean']  
+    }
+    d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j] <- 
+      d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j]/5/
+      d_out[d_out$var_names=='Participated for own illness or maternal disability leave','mean']
+    d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j] <- 
+      d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5/
+      d_out[d_out$var_names=='Participated for ill relative or child bonding leave','mean']
+  }
+  # regenerate CI's with new SE's, means
+  d_out$CI= paste("[",format(d_out$mean-1.96*d_out$SE, digits=2, scientific=FALSE, big.mark=","),",", 
+                  format(d_out$mean+1.96*d_out$SE, digits=2, scientific=FALSE, big.mark=","),"]")
+  
   colnames(d_out) <- c("Variable","Mean", "Standard Error of Mean", "Confidence Interval","Population Total", "Pop Total Standard Error", "Pop Total CI")
   write.csv(d_out,file=paste0('./output/',output,"_rawstats.csv"), row.names= FALSE)
   
