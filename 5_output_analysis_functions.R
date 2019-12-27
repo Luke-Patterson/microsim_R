@@ -184,6 +184,7 @@ state_compar_stats <-function(d, output) {
   
   if (makelog==TRUE) {
     
+    
     # add results to log file
     cat("------------------------------", file = log_name, sep="\n", append = TRUE)
     cat("Results", file = log_name, sep="\n", append = TRUE)

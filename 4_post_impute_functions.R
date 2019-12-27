@@ -56,13 +56,13 @@ LEAVEPROGRAM <- function(d, sens_var,dual_receiver) {
   if (samp_sum> pop_target) {
     while (samp_sum> pop_target) {
       samp_idx <- samp_idx[2:length(samp_idx)]
-      samp_sum <- sum(d[samp_idx,'PWGTP'],na.rm=TRUE)
+      samp_sum <- sum(d[samp_idx,'PWGTP'])
     }
   } else if (samp_sum< pop_target) { 
     while (samp_sum < pop_target){
       remain_idx <- setdiff(rownames(d),samp_idx)
       samp_idx  <- append(samp_idx,remain_idx[2])
-      samp_sum <- sum(d[samp_idx,'PWGTP'],na.rm=TRUE)
+      samp_sum <- sum(d[samp_idx,'PWGTP'])
     }
   }
   # set dual receiver status for
@@ -102,12 +102,12 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
                    matdis = "length_matdis>0 & is.na(length_matdis)==FALSE & recStatePay==0",
                    bond = "length_bond>0 & is.na(length_bond)==FALSE & recStatePay==0")
   
-  test_filts <- c(own = "take_own==1",
-                  illspouse = "take_illspouse==1 & nevermarried == 0 & divorced == 0",
-                  illchild = "take_illchild==1",
-                  illparent = "take_illparent==1",
-                  matdis = "take_matdis==1 & female == 1 & nochildren == 0",
-                  bond = "take_bond==1 & nochildren == 0")
+  test_filts <- c(own = "(take_own==1|need_own==1)",
+                  illspouse = "(take_illspouse==1|need_illspouse==1) & nevermarried == 0 & divorced == 0",
+                  illchild = "(take_illchild==1|need_illchild==1)",
+                  illparent = "(take_illparent==1|need_illparent==1)",
+                  matdis = "(take_matdis==1|need_matdis==1) & female == 1 & nochildren == 0",
+                  bond = "(take_bond==1|need_bond==1) & nochildren == 0")
 
   maxlen <- c(own=maxlen_DI,
               illspouse=maxlen_PFL,
@@ -668,6 +668,7 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     adj_sample <- TRUE
     if (full_particip==TRUE) {
       samp_idx <- rownames(samp_frame)
+      adj_sample <- FALSE
     # check to see if there's enough sample to do this draw
     } else if (nrow(samp_frame)>=samp_size) {
       samp_idx <- sample(rownames(samp_frame), samp_size)
@@ -688,14 +689,14 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
       if (samp_sum> pop_target) {
         while (samp_sum> pop_target & length(samp_idx)!=0) {
           samp_idx <- samp_idx[2:length(samp_idx)]
-          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
+          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
         }
       } else if (samp_sum< pop_target) { 
         while (samp_sum < pop_target & length(samp_idx)!=0){
           # shuffle remaining idx's
           remain_idx <- sample(setdiff(rownames(samp_frame),samp_idx))
           samp_idx  <- append(samp_idx,remain_idx[2])
-          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
+          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
         }
       }
     }
