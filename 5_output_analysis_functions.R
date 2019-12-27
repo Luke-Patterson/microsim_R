@@ -162,10 +162,22 @@ state_compar_stats <-function(d, output) {
       d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5/
       d_out[d_out$var_names=='Participated for ill relative or child bonding leave','mean']
   }
+  # transform pop nums to weeks as well
+  for (j in c('total','total_SE')) {
+    for (i in leave_types ) {
+      d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j]/5
+    }
+    d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j] <- 
+      d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j]/5
+    d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j] <- 
+      d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5
+  }
+  
   # regenerate CI's with new SE's, means
   d_out$CI= paste("[",format(d_out$mean-1.96*d_out$SE, digits=2, scientific=FALSE, big.mark=","),",", 
                   format(d_out$mean+1.96*d_out$SE, digits=2, scientific=FALSE, big.mark=","),"]")
-  
+  d_out$total_CI= paste("[",format(d_out$total-1.96*d_out$total_SE, digits=2, scientific=FALSE, big.mark=","),",", 
+                  format(d_out$total+1.96*d_out$total_SE, digits=2, scientific=FALSE, big.mark=","),"]")
   colnames(d_out) <- c("Variable","Mean", "Standard Error of Mean", "Confidence Interval","Population Total", "Pop Total Standard Error", "Pop Total CI")
   write.csv(d_out,file=paste0('./output/',output,"_rawstats.csv"), row.names= FALSE)
   
