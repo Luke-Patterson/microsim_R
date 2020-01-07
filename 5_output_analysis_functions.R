@@ -21,7 +21,9 @@
 # function to generate SE for an ACS variable using replicate weights
 # following method specified by this document from Census:
 # https://www2.census.gov/programs-surveys/acs/tech_docs/pums/accuracy/2012_2016AccuracyPUMS.pdf
-replicate_weights_SE <- function(d, var) {
+replicate_weights_SE <- function(d, var, filt=TRUE) {
+  # filter d by specified filter
+  d <- d[filt,]
   # base estimate of population mean, total
   x= weighted.mean(d[,var], d[,'PWGTP'], na.rm=TRUE)
   tot=sum(d[,var]* d[,'PWGTP'], na.rm=TRUE)
@@ -67,6 +69,7 @@ standard_summary_stats <-function(d, output) {
     ptake_vars=c(ptake_vars,paste("ptake_",i,sep=""))
     ptake_names=c(ptake_names, paste("Took & got benefits for",i,'leave'))
   }
+  
   
   # define columns of csv
   vars=c('eligworker', 'particip', 'particip_length',ptake_vars, 'actual_benefits')
@@ -126,7 +129,12 @@ state_compar_stats <-function(d, output) {
   total_SE=c()
   total_CI=c()
   for (i in vars) {
-    temp=replicate_weights_SE(d, i)
+    # for benefit and len vars, filter to just non zero vals 
+    if (grepl('plen', i) | grepl('bene', i)){
+      temp= replicate_weights_SE(d, i,d[i]>0)  
+    } else {
+      temp=replicate_weights_SE(d, i)  
+    }
     mean=c(mean, temp[2])
     SE=c(SE, temp[3])
     CI=c(CI, temp[4])
@@ -134,7 +142,7 @@ state_compar_stats <-function(d, output) {
     total_SE=c(total_SE, temp[8])
     total_CI=c(total_CI, temp[11])
   }
-  
+
   mean=unname(unlist(mean))
   SE=unname(unlist(SE))
   CI=unname(unlist(CI))
@@ -149,18 +157,15 @@ state_compar_stats <-function(d, output) {
               'Benefits Received ($), total')
   d_out=data.frame(var_names,mean,SE,CI,total, total_SE, total_CI)
   # manipulate the length ofparticipation vars
-  # transform means to only include those with >0 length, then divide by 5 to match format of state actual data output
+  # divide by 5 to match format of state actual data output
   for (j in c('mean','SE')) {
     for (i in leave_types ) {
-      d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j]/5/
-        d_out[d_out$var_names==paste('Participated for', i, 'leave'),'mean']  
+      d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j]/5
     }
     d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j] <- 
-      d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j]/5/
-      d_out[d_out$var_names=='Participated for own illness or maternal disability leave','mean']
+      d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j]/5
     d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j] <- 
-      d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5/
-      d_out[d_out$var_names=='Participated for ill relative or child bonding leave','mean']
+      d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5
   }
   # transform pop nums to weeks as well
   for (j in c('total','total_SE')) {

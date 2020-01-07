@@ -18,8 +18,8 @@ nj <- read.csv('output/NJ_logitissue_brief_1.csv')
 # start a data frame to store all the summary statistics we need
 states <- c('CA','NJ','RI')
 leave_types <- c("own","illspouse","illchild","illparent","matdis","bond")
-vars <- append(c(),values=c(paste0('take_', leave_types),paste0('need_', leave_types),
-                            paste0('length_', leave_types), c('actual_benefits')))
+vars <- append(c(),values=c(paste0('ptake_', leave_types),c('ptake_DI','ptake_PFL'), paste0('plen_', leave_types), 
+                            c('DI_plen','PFL_plen','bene_DI','bene_PFL','actual_benefits','eligworker')))
 results <- data.frame(row.names = vars)
 for (i in vars)
 results['CA'] <- NA
@@ -35,14 +35,14 @@ results['RI_SE'] <- NA
 d <- ca
 for (v in vars) {
   stats <- replicate_weights_SE(d, var=v)
-  if (str_detect(v,'length')==FALSE) {
-    stats <- replicate_weights_SE(d, var=v)
+  if (str_detect(v,'plen')==FALSE) {
+    stats <- replicate_weights_SE(d, var=v, filt=d[v]>0)
     results[v,'CA'] <- stats['total']
     results[v,'CA_SE'] <- stats['total_SE']  
   } else {
-    stats <- replicate_weights_SE(d, var=v)
-    results[v,'CA'] <- stats['estimate']
-    results[v,'CA_SE'] <- stats['std_error']
+    stats <- replicate_weights_SE(d, var=v, filt=d[v]>0)
+    results[v,'CA'] <- stats[['estimate']]/5
+    results[v,'CA_SE'] <- stats[['std_error']]/5
   }
 }
 
@@ -50,31 +50,31 @@ for (v in vars) {
 d <- nj
 for (v in vars) {
   stats <- replicate_weights_SE(d, var=v)
-  if (str_detect(v,'length')==FALSE) {
-    stats <- replicate_weights_SE(d, var=v)
+  if (str_detect(v,'plen')==FALSE) {
+    stats <- replicate_weights_SE(d, var=v, filt=d[v]>0)
     results[v,'NJ'] <- stats['total']
     results[v,'NJ_SE'] <- stats['total_SE']  
   } else {
-    stats <- replicate_weights_SE(d, var=v)
-    results[v,'NJ'] <- stats['estimate']
-    results[v,'NJ_SE'] <- stats['std_error']
+    stats <- replicate_weights_SE(d, var=v, filt=d[v]>0)
+    results[v,'NJ'] <- stats[['estimate']]/5
+    results[v,'NJ_SE'] <- stats[['std_error']]/5
   }
 }
 
 # RI 
 d <- ri
 for (v in vars) {
-  if (str_detect(v,'length')==FALSE) {
-    stats <- replicate_weights_SE(d, var=v)
+  if (str_detect(v,'plen')==FALSE) {
+    stats <- replicate_weights_SE(d, var=v, filt=d[v]>0)
     results[v,'RI'] <- stats['total']
     results[v,'RI_SE'] <- stats['total_SE']  
   } else {
-    stats <- replicate_weights_SE(d, var=v)
-    results[v,'RI'] <- stats['estimate']
-    results[v,'RI_SE'] <- stats['std_error']
+    stats <- replicate_weights_SE(d, var=v, filt=d[v]>0)
+    results[v,'RI'] <- stats[['estimate']]/5
+    results[v,'RI_SE'] <- stats[['std_error']]/5
   }
 }
-
+results['source'] <- 'IMPAQ'
 write.csv(results,file='output/issue_brief_1 nums.csv')
 
 
