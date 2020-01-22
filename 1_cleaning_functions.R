@@ -722,7 +722,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   d <- d %>% mutate(hiemp=ifelse(HINS1==1,1,0))
   
   # log earnings
-  d <- d %>% mutate(wage12=WAGP*(ADJINC/1042852))
+  d <- d %>% mutate(wage12=WAGP*(ADJINC/1056030))
   d <- d %>% mutate(lnearn=ifelse(wage12>0, log(wage12), NA))
   
   # family income

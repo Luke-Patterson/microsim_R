@@ -966,7 +966,7 @@ TOPOFF <- function(d, topoff_rate, topoff_minlength) {
   # note: topoff will override benefiteffect changes
   d <- d %>% mutate(actual_benefits=wage12/(round(weeks_worked*5))*particip_length*benefit_prop)
   d <- d %>% mutate(actual_benefits=ifelse(is.na(actual_benefits),0,actual_benefits))
-  
+
   #subtract benefits from pay
   d <- d %>% mutate(actual_leave_pay=ifelse(topoff_count>0,base_leave_pay-actual_benefits,actual_leave_pay))
   

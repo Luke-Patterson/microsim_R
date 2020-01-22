@@ -91,22 +91,22 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
                   unaffordable = 'TRUE')
   
   # weight: if method uses FMLA weights, the weight variable to use
-  weights <- c(own = "~ fixed_weight",
-              illspouse = "~ fixed_weight",
-              illchild = "~ fixed_weight",
+  weights <- c(own = "~ weight",
+              illspouse = "~ weight",
+              illchild = "~ weight",
               illparent = "~ weight",
-              matdis = "~ fixed_weight",
-              bond = "~ fixed_weight",
-              need_own = "~ fixed_weight",
-              need_illspouse = "~ fixed_weight",
-              need_illchild = "~ fixed_weight",
+              matdis = "~ weight",
+              bond = "~ weight",
+              need_own = "~ weight",
+              need_illspouse = "~ weight",
+              need_illchild = "~ weight",
               need_illparent = "~ weight",
-              need_matdis = "~ fixed_weight",
-              need_bond = "~ fixed_weight",
-              anypay = "~ fixed_weight",
-              prop_pay = '~ fixed_weight',
-              resp_len = "~ fixed_weight",
-              unaffordable = "~ fixed_weight")
+              need_matdis = "~ weight",
+              need_bond = "~ weight",
+              anypay = "~ weight",
+              prop_pay = '~ weight',
+              resp_len = "~ weight",
+              unaffordable = "~ weight")
   
   # Save ACS and FMLA Dataframes at this point to document format that 
   # alternative imputation methods will need to expect
@@ -317,13 +317,29 @@ logit_leave_method <- function(d_test, d_train, xvars=NULL, yvars, test_filts, t
   #            'ndep_kid', 'ndep_old', 'nevermarried', 'partner',
   #            'widowed', 'divorced', 'separated')
   
+  # in training data, drop all obs that have any missing values 
+  d_train <-d_train[complete.cases(d_train[,xvars]),]
+  
+  # make sure there's still observations left
+  if (nrow(d_train)==0){
+    stop('Error: no observations in training data set have all non-missing values for each xvar')
+  }
+  
+    
   # population mean imputation for missing xvars in logit regression
   if (xvars[1]!="") {
     for (i in xvars) {
-      d_train[is.na(d_train[,i]), i] <- 0
-      d_test[is.na(d_test[,i]), i] <- mean(d_test[,i], na.rm = TRUE)
+      
+      browser()
+      # In test data if var is numeric, fill missing values with mean value
+      if (is.numeric(d_test[,i]) & any(unique(d_test[,i])!=c(0,1))) {
+        d_test[is.na(d_test[,i]), i] <- mean(d_test[,i], na.rm = TRUE)  
+      }
+      
     }  
+    table(d_train[,i])
   }
+ 
   
   # remove prop_pay from lists as we need to use ordinal regression for it
   train_filts <- list.remove(train_filts, 'prop_pay')
