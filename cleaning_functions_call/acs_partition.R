@@ -16,13 +16,16 @@ states <- read.csv("csv_inputs/ACS_state_codes.csv")
 
 # load cleaned cps data
 d_cps <- readRDS(paste0("./R_dataframes/","d_cps.rds"))
-
+first <- TRUE
 # do state of residence first; just read csv's and process
 for (i in states[,'state_abbr']) {
   print(paste0('creating residence data set for ',i))
   lower_abbr <- tolower(i)
   # delete objects from previous loop to preserve memory
-  rm(d_acs,d_acs_person,d_acs_house)
+  if (first==FALSE){
+    rm(d_acs,d_acs_person,d_acs_house)  
+  }
+  
   # load the file
   d_acs_person <- read.csv(paste0("./csv_inputs/states/ss16p",lower_abbr,'.csv'))#,nrows=100)
   d_acs_house <- read.csv(paste0("./csv_inputs/states/ss16h",lower_abbr,'.csv'))#,nrows=100)
@@ -32,6 +35,7 @@ for (i in states[,'state_abbr']) {
   d_acs <- impute_cps_to_acs(d_acs, d_cps)
   # save R dataframe
   saveRDS(d_acs,file=paste0('./R_dataframes/resid_states/',i,'_resid.rds'))
+  first <- FALSE
 }
 
 # remove state of work files to ensure append isn't duplicating records

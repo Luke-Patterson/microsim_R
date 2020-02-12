@@ -14,48 +14,6 @@
 # standard_summary_stats
 
 
-# ============================ #
-# 1.replicate_weights_SE
-# ============================ #
-
-# function to generate SE for an ACS variable using replicate weights
-# following method specified by this document from Census:
-# https://www2.census.gov/programs-surveys/acs/tech_docs/pums/accuracy/2012_2016AccuracyPUMS.pdf
-replicate_weights_SE <- function(d, var, filt=TRUE) {
-  # filter d by specified filter
-  d <- d[filt,]
-  # base estimate of population mean, total
-  x= weighted.mean(d[,var], d[,'PWGTP'], na.rm=TRUE)
-  tot=sum(d[,var]* d[,'PWGTP'], na.rm=TRUE)
-  
-  # Estimates from replicate weights
-  replicate_weights <- paste0('PWGTP',seq(1,80))
-  count=0
-  for (i in replicate_weights) {
-    count=count+1
-    assign(paste("x", count, sep = ""), weighted.mean(d[,var], d[,i], na.rm=TRUE))   
-    assign(paste("tot", count, sep = ""), sum(d[,var]* d[,i], na.rm=TRUE))
-  }
-  replicate_means <- paste0('x',seq(1,80))
-  
-  # calculate standard error, confidence interval
-  SE= sqrt(4/80*sum(sapply(mget(paste0('x',seq(1,80))), function(y) {(y-x)^2})))
-  CI_low=x-1.96*SE
-  CI_high=x+1.96*SE
-  CI= paste("[",format(x-1.96*SE, digits=2, scientific=FALSE, big.mark=","),",", format(x+1.96*SE, digits=2, scientific=FALSE, big.mark=","),"]")
-  total=sum(d[,var]*d[,'PWGTP'], na.rm=TRUE)
-  total_SE= sqrt(4/80*sum(sapply(mget(paste0('tot',seq(1,80))), function(y) {(y-tot)^2})))
-  total_CI_low= total-total_SE*1.96
-  total_CI_high= total+total_SE*1.96
-  total_CI=paste("[",format(total_CI_low, digits=2, scientific=FALSE, big.mark=","),",", format(total_CI_high, digits=2, scientific=FALSE, big.mark=","),"]")
-  # return statistics
-  stats= list(var, estimate=x, std_error=SE,confidence_int=CI,CI_low=CI_low,CI_high=CI_high, 
-              total=total, total_SE=total_SE,total_CI_low=total_CI_low,total_CI_high=total_CI_high, total_CI=total_CI)
-  for (i in stats[c(2:3,7:8,11)]) {
-    i <- format(i, nsmall=3)
-  }
-  return(stats)
-}
 
 # ============================ #
 # 2. standard_summary_stats

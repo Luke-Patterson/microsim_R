@@ -110,8 +110,8 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
   
   # Save ACS and FMLA Dataframes at this point to document format that 
   # alternative imputation methods will need to expect
-  saveRDS(d_fmla, file="./R_dataframes/d_fmla_impute_input.rds") # TODO: Remove from final version
-  saveRDS(d_acs, file="./R_dataframes/d_acs_impute_input.rds") # TODO: Remove from final version
+  # saveRDS(d_fmla, file="./R_dataframes/d_fmla_impute_input.rds") # TODO: Remove from final version
+  # saveRDS(d_acs, file="./R_dataframes/d_acs_impute_input.rds") # TODO: Remove from final version
   
   # KNN1 imputation method
   if (impute_method=="KNN1") {
@@ -317,27 +317,39 @@ logit_leave_method <- function(d_test, d_train, xvars=NULL, yvars, test_filts, t
   #            'ndep_kid', 'ndep_old', 'nevermarried', 'partner',
   #            'widowed', 'divorced', 'separated')
   
-  # in training data, drop all obs that have any missing values 
-  d_train <-d_train[complete.cases(d_train[,xvars]),]
   
-  # make sure there's still observations left
-  if (nrow(d_train)==0){
-    stop('Error: no observations in training data set have all non-missing values for each xvar')
-  }
-  
-    
   # population mean imputation for missing xvars in logit regression
   if (xvars[1]!="") {
+    options(warn=-1)
     for (i in xvars) {
-      
-      browser()
-      # In test data if var is numeric, fill missing values with mean value
-      if (is.numeric(d_test[,i]) & any(unique(d_test[,i])!=c(0,1))) {
+      # In test and training data if xvar is numeric, fill missing values with mean value
+      if (is.numeric(d_test[,i]) & any(unique(d_test[!is.na(d_test[,i]), i])!=c(0,1))) {
         d_test[is.na(d_test[,i]), i] <- mean(d_test[,i], na.rm = TRUE)  
       }
-      
-    }  
-    table(d_train[,i])
+      if (is.numeric(d_train[,i]) & any(unique(d_train[!is.na(d_train[,i]), i])!=c(0,1))) {
+        d_train[is.na(d_train[,i]), i] <- mean(d_train[,i], na.rm = TRUE)  
+      }
+      # if it is a dummy var, then take a random draw with probability = to the non-missing mean
+      if (is.numeric(d_test[,i]) & all(unique(d_test[!is.na(d_test[,i]), i])==c(0,1))) {
+        if (any(is.na(d_test[,i]))){
+          d_test$prob <- mean(d_test[,i], na.rm = TRUE)
+          d_test['rand']=runif(nrow(d_test))
+          d_test[is.na(d_test[,i]), i] <- with(d_test[is.na(d_test[,i]), c(i,'rand','prob')], ifelse(rand>prob,0,1))    
+          d_test['rand'] <- NULL
+          d_test$prob <- NULL
+        }
+      }
+      if (is.numeric(d_train[,i]) & all(unique(d_train[!is.na(d_train[,i]), i])==c(0,1))) {
+        if (any(is.na(d_train[,i]))){
+          d_train$prob <- mean(d_train[,i], na.rm = TRUE)
+          d_train['rand']=runif(nrow(d_train))
+          d_train[is.na(d_train[,i]), i] <- with(d_train[is.na(d_train[,i]), c(i,'rand','prob')], ifelse(rand>prob,0,1))    
+          d_train['rand'] <- NULL
+          d_train$prob <- NULL
+        }
+      }
+    }
+    options(warn=0)
   }
  
   
@@ -855,20 +867,20 @@ Naive_Bayes <- function(d_train, d_test, yvars, train_filts, test_filts, weights
     # # generate NB model from training data
     w_train <- as.data.frame(sapply(d_train %>% filter(complete.cases(select(d_train, yvars[[i]], xvars))) 
                                     %>% filter_(train_filts[i]) %>% select(xvars, yvars[[i]]), as.factor))
+    w_test <- as.data.frame(sapply(d_test %>% filter(complete.cases(select(d_test, xvars))) %>% filter_(test_filts[i])%>% select(xvars),as.factor))
+    
+    # make sure that testing and training sets have same factor levels
+    for (j in xvars) {
+      # make sure categorical vars are factors with equivalent levels
+      d_train[,c(j)] <- factor(d_train[,c(j)], levels=levels(d_test[,c(j)]))
+      w_train[,c(j)] <- factor(w_train[,c(j)], levels=levels(w_test[,c(j)]))
+    }
     
     #wanbia <- compute_wanbia_weights('prop_pay', as.data.frame(sapply(w_train, as.factor))) 
     wanbia <- bnc(dag_learner = 'nb',class=yvars[[i]], dataset=w_train,smooth=0,wanbia=TRUE) 
     
     
     # apply model to test data 
-    w_test <- as.data.frame(sapply(d_test %>% filter(complete.cases(select(d_test, xvars))) %>% filter_(test_filts[i])%>% select(xvars),as.factor))
-    
-    # make sure that testing and training sets have same factor levels
-    for (j in xvars) {
-      if (!all(levels(w_train[,c(j)]) %in% levels(w_test[,c(j)]))) {
-        levels(w_test[,c(j)]) = levels(w_train[,c(j)])
-      }
-    }
     
     w_test_ids <- d_test %>% filter(complete.cases(select(d_test, xvars))) %>% filter_(test_filts[i])%>% select(id)
     wanbia_imp <- as.data.frame(predict(object=wanbia, newdata = w_test, prob=TRUE)) 

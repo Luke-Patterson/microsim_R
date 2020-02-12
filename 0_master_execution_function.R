@@ -25,7 +25,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               LOCALGOV=FALSE,
                               SELFEMP=FALSE, 
                               PRIVATE=TRUE,
-                              impute_method="KNN1",
+                              impute_method="logit",
                               kval= 3,
                               makelog=TRUE,
                               xvars=c("widowed", "divorced", "separated", "nevermarried", "female", 
@@ -36,8 +36,8 @@ policy_simulation <- function(saveCSV=FALSE,
                               xvar_wgts = rep(1,length(xvars)),
                               base_bene_level=1, topoff_rate=0, topoff_minlength=0, sample_prop=NULL, sample_num=NULL,
                               bene_effect=FALSE, dependent_allow=0, full_particip=FALSE, 
-                              own_uptake=.25, matdis_uptake=.25, bond_uptake=.25, 
-                              illparent_uptake=.25, illspouse_uptake=.25, illchild_uptake=.25, wait_period=0,
+                              own_uptake=.01, matdis_uptake=.01, bond_uptake=.01, 
+                              illparent_uptake=.01, illspouse_uptake=.01, illchild_uptake=.01, wait_period=0,
                               own_elig_adj=1, illspouse_elig_adj=1, illchild_elig_adj=1, 
                               illparent_elig_adj=1, matdis_elig_adj=1, bond_elig_adj=1,
                               clone_factor=1, sens_var = 'resp_len', progalt_post_or_pre ='post',
@@ -53,6 +53,13 @@ policy_simulation <- function(saveCSV=FALSE,
                               fmla_protect=TRUE, earnings=NULL, weeks= NULL, ann_hours=NULL, minsize= NULL, 
                               elig_rule_logic= '(earnings & weeks & ann_hours & minsize)',
                               formula_prop_cuts=NULL, formula_value_cuts=NULL, formula_bene_levels=NULL,
+                              ABF_enabled=FALSE,
+                              ABF_elig_size=0,
+                              ABF_max_tax_earn=0,
+                              ABF_bene_tax=TRUE,
+                              ABF_avg_state_tax=0,
+                              ABF_payroll_tax=0,
+                              ABF_bene=NULL,
                               output='output', output_stats=NULL, random_seed=123, runtime_measure=0) { 
   
   
@@ -108,7 +115,7 @@ policy_simulation <- function(saveCSV=FALSE,
   
   # run files that define functions
   source("1_cleaning_functions.R"); source("2_pre_impute_functions.R"); source("3_impute_functions.R"); 
-  source("4_post_impute_functions.R"); source("5_output_analysis_functions.R")
+  source("4_post_impute_functions.R"); source("5_ABF_functions.R"); source("6_output_analysis_functions.R")
   
   # set random seed option
   if (!is.null(random_seed)) {
@@ -327,6 +334,13 @@ policy_simulation <- function(saveCSV=FALSE,
   d_acs_imp <- CLEANUP(d_acs_imp, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_own, maxlen_matdis, maxlen_bond, 
                        maxlen_illparent, maxlen_illspouse, maxlen_illchild, maxlen_total,maxlen_DI,maxlen_PFL)
   # OUTPUT: ACS file with finalized leave taking, program uptake, and benefits received variables
+  
+  # Running ABF module
+  if (ABF_enabled==TRUE) {
+    d_acs_imp <- run_ABF(d_acs_imp, ABF_elig_size, ABF_max_tax_earn, ABF_bene_tax, ABF_avg_state_tax, 
+                     ABF_payroll_tax, ABF_bene, output)
+  }
+  
   if (runtime_measure==1){
     time_elapsed('finished clean up')
   }
@@ -360,7 +374,6 @@ policy_simulation <- function(saveCSV=FALSE,
       take_compar(d_acs_imp, output)
     }  
   }
-  
   
   return(d_acs_imp)
 }

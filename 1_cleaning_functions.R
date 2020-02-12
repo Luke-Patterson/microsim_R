@@ -54,6 +54,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   
   # covered and eligible 
   d_fmla <-  d_fmla %>% mutate(coveligd = ifelse(covwrkplace == 1 & fmla_eligworker == 1,1,0))
+  d_fmla <-  d_fmla %>% mutate(coveligd = ifelse(is.na(covwrkplace)== 1 | is.na(fmla_eligworker) == 1,NA,coveligd))
   
   # hourly worker
   d_fmla <- d_fmla %>% mutate(hourly = ifelse(E9_1 == 2,1,0))
@@ -420,6 +421,7 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   
   d_fmla <- d_fmla %>% mutate(need_bond = ifelse((is.na(need_matdis) | need_matdis == 0) & (B6_1_CAT == 21 & B12_1 == 2),1,0))
   d_fmla <- d_fmla %>% mutate(need_bond = ifelse(is.na(B6_1_CAT) == 1, NA, need_bond))
+  d_fmla <- d_fmla %>% mutate(need_bond = ifelse(is.na(B12_1) == 1, NA, need_bond))
   d_fmla <- d_fmla %>% mutate(need_bond = ifelse(is.na(need_bond) == 1 & (LEAVE_CAT == 1 | LEAVE_CAT == 3),0, need_bond))
   
   d_fmla <- d_fmla %>% mutate(type_bond = ifelse((take_bond == 1 | need_bond == 1),1,0))
@@ -535,7 +537,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   d_hh$nochildren <- as.data.frame(dummy("FPARC",d_hh))$FPARC4
   # adjust to 2012 dollars to conform with FMLA 2012 data
   # don't multiple ADJINC directly to faminc to avoid integer overflow issue in R
-  d_hh$adjinc_2012 <- d_hh$ADJINC / 1042852 
+  d_hh$adjinc_2012 <- d_hh$ADJINC / 1056030 
   d_hh$faminc <- d_hh$FINCP * d_hh$adjinc_2012 
   d_hh <- d_hh %>% mutate(faminc=ifelse(is.na(faminc)==FALSE & faminc<=0, 0.01, faminc)) # force non-positive income to be epsilon to get meaningful log-income
   d_hh$lnfaminc <- log(d_hh$faminc)
@@ -579,7 +581,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   d <- d %>% mutate(nevermarried=ifelse(partner==1, 0, nevermarried))
   
   #gender
-  d <- d %>% mutate(male=ifelse(SEX==1, 0, nevermarried))
+  d <- d %>% mutate(male=ifelse(SEX==1, 1, 0))
   d$female <- 1-d$male
   
   #age
@@ -908,8 +910,8 @@ impute_cps_to_acs <- function(d_acs, d_cps){
   # logit for hourly paid regression
   varname= 'paid_hrly'
   formula = paste("paid_hrly ~ female + black + a_age + agesq + BA",
-            "+ GradSch + occ_1 + occ_3 + occ_5 + occ_7 + occ_8",
-            "+ occ_9 + occ_10 + ind_5 + ind_8 + ind_11 + ind_12")
+            "+ GradSch + occ_1 + occ_2 + occ_3 + occ_3 + occ_4 +  occ_5 + occ_6 + occ_7 + occ_8",
+            "+ occ_9 + occ_10 + ind_1 + ind_2 + ind_3 + ind_4 + ind_5 + ind_6 + ind_7 + ind_8 + ind_9 + ind_10 + ind_11 + ind_12 + ind_13")
   filt = c(paid_hrly= "TRUE")
   weight = c(paid_hrly = "~ marsupwt")
   
@@ -920,16 +922,18 @@ impute_cps_to_acs <- function(d_acs, d_cps){
   # OUTPUT: Dataframe with two columns: id and imputed paid hourly variable
   
   # ordered logit for number of employers
+  d_cps <- d_cps %>% mutate(one_emp_reg=ifelse(phmemprs>=1,1,0))
   varname= 'num_emp'
-  formula = paste("factor(phmemprs) ~  age + agesq + asian + hisp",
+  formula = paste("one_emp_reg ~  age + agesq + asian + hisp",
             "+ ltHS + someCol + BA + GradSch + lnearn",
-            "+ hiemp + ind_4 + ind_5 + ind_6 + ind_8",
-            "+ ind_13 + occ_1 + occ_6 + occ_7 + occ_9 + occ_10")
-  filt =  "TRUE"
+            "+ hiemp + occ_1 + occ_2 + occ_3 + occ_3 + occ_4 +  occ_5 + occ_6 + occ_7 + occ_8",
+            "+ occ_9 + occ_10 + ind_1 + ind_2 + ind_3 + ind_4 + ind_5 + ind_6 + ind_7 + ind_8 + ind_9 + ind_10 + ind_11 + ind_12 + ind_13")
+  filt = c(num_emp= "TRUE")
+  weight = c(num_emp = "~ marsupwt")
   
   # INPUTS: CPS (training) data set, ordinal regression model specification, filter conditions, var to create 
-  d_filt <- runOrdinalEstimate(d_train=d_cps,d_test=d_acs, formula=formula,test_filt=filt,
-                              train_filt=filt, varname=varname)
+  d_filt <-  runLogitEstimate(d_train=d_cps,d_test=d_acs, formula=formula, test_filt=filt, train_filt=filt, 
+                              weight=weight, varname=varname, create_dummies=TRUE)
   d_acs <- merge(d_filt, d_acs, by='id', all.y=TRUE)
   # OUTPUTS: ACS data with imputed number of employers variable
 
@@ -984,8 +988,8 @@ impute_cps_to_acs <- function(d_acs, d_cps){
   # Ordered logit employer size categories
   varname = 'emp_size'
   formula = paste("factor(emp_size) ~ a_age + black + ltHS + someCol + BA + GradSch + lnearn",
-                 "  + hiemp + ind_1 + ind_3 + ind_5 + ind_6 + ind_8 + ind_9",
-                 "+ ind_11 + ind_12 + ind_13 + occ_1 + occ_4 + occ_5 + occ_6 + occ_7 + occ_9")
+                 "  + hiemp + occ_1 + occ_2 + occ_3 + occ_3 + occ_4 +  occ_5 + occ_6 + occ_7 + occ_8",
+                 "+ occ_9 + occ_10 + ind_1 + ind_2 + ind_3 + ind_4 + ind_5 + ind_6 + ind_7 + ind_8 + ind_9 + ind_10 + ind_11 + ind_12 + ind_13")
   filt = "TRUE"
   weight = "marsupwt"
   d_filt <- runOrdinalEstimate(d_train=d_cps,d_test=d_acs, formula=formula,test_filt=filt,
@@ -1007,7 +1011,7 @@ impute_cps_to_acs <- function(d_acs, d_cps){
     mutate(oneemp=ifelse(num_emp==1,1,0))
   
   # generate FMLA coverage eligibility based on these vars:
-  d_acs <- d_acs %>% mutate(coveligd=ifelse(WKHP>=25 & weeks_worked>=40 & num_emp==1 & emp_size>=50,1,0))
+  d_acs <- d_acs %>% mutate(coveligd=ifelse(WKHP*weeks_worked>=1250 & num_emp==1 & emp_size>=50,1,0))
   
   # clean up vars
   d_acs <- d_acs[, !(names(d_acs) %in% c('rand','temp_size','iweeks_worked',
