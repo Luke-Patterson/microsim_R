@@ -229,8 +229,8 @@ write.csv(d_agg, file='output/test_ACS_yvar_counts.csv')
 for (i in seq(1,80)) {
    d_acs[paste0('PWGTP',i)] <- NULL
 }
-for (type in leave_types) {
-   for (stub in c('take_','need_','squo_length_','mnl_','length_','plen_','takes_up_')) {
+for (stub in c('take_','need_','squo_length_','mnl_','length_','plen_','takes_up_')) {
+   for (type in leave_types) {
       var <- paste0(stub,type)
       d_acs <- d_acs %>% select(-var,var)      
    }
