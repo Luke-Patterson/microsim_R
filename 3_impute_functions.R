@@ -590,8 +590,8 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
     colnames(est_df) <- c('id', squo_var, yvar)
     # status quo length
     if (nrow(test)!= 0 & nrow(train)!= 0 ) {
-      train_samp_restrict <- function(x) train %>% sample_n(1, weight = weight) %>% select(yvar)
-      test[squo_var] <- apply(test[yvar],1, train_samp_restrict)
+      #train_samp_restrict <- function(x) train %>% sample_n(1, weight = weight) %>% select(yvar)
+      test[squo_var] <- train %>% sample_n(nrow(test), weight = weight, replace = TRUE) %>% select(yvar)
       est_df <- rbind(est_df, test[c('id', squo_var)])
     }
 
