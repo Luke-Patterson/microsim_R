@@ -589,17 +589,12 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
     est_df <- data.frame(matrix(ncol = 3, nrow = 0))  
     colnames(est_df) <- c('id', squo_var, yvar)
     # status quo length
-    for (i in c('resp_len == 0', 'resp_len == 1')) {
-      temp_train <- train %>% filter_(i)
-      temp_test <- test %>% filter_(i)
-      if (nrow(temp_test)!= 0 & nrow(temp_train)!= 0 ) {
-        train_samp_restrict <- function(x) temp_train[sample(nrow(temp_train), 1), yvar]
-        temp_test[squo_var] <- apply(temp_test[yvar],1, train_samp_restrict)
-        est_df <- rbind(est_df, temp_test[c('id', squo_var)])
-      }
+    if (nrow(test)!= 0 & nrow(train)!= 0 ) {
+      train_samp_restrict <- function(x) train %>% sample_n(1, weight = weight) %>% select(yvar)
+      test[squo_var] <- apply(test[yvar],1, train_samp_restrict)
+      est_df <- rbind(est_df, test[c('id', squo_var)])
     }
-    
-    
+
     # changing counterfactual length option:
     # for constrained individuals, draw length from unconstrained draws
     if (ext_resp_len==TRUE) {
@@ -646,7 +641,7 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
             # to revert that back to numeric before doing comparison operations.
             squo_len <- as.numeric(x[squo_var])
             if (nrow(temp_train %>% filter(get(yvar)> squo_len))!=0) {
-              result <- temp_train %>% filter(get(yvar)> squo_len) %>% sample_n(1, weight = weight) %>% select_(yvar)
+              result <- temp_train %>% filter(get(yvar)> squo_len) %>% sample_n(1, weight = weight) %>% select(yvar)
               # top code result at 261 days - how many working days there are in a year, and at program max length, but no less than squo
               return(max(squo_len,min(result,261,ml)))
             }

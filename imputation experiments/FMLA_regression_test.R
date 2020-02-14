@@ -2,9 +2,13 @@
 library(plyr)
 library(dplyr)
 library(survey)
+library("rjson")
 options(error=recover)
 
+source("0_master_execution_function.R")
+source("3_impute_functions.R")
 source("4_post_impute_functions.R")
+makelog <<- FALSE
 
 #d_fmla <- readRDS('R_dataframes/d_fmla.rds')
 d_fmla <- read.csv('csv_inputs/fmla_clean_2012_py.csv')
@@ -15,6 +19,22 @@ xvars = c('widowed', 'divorced', 'separated', 'nevermarried',
       'black', 'other', 'asian','native','hisp','nochildren','faminc')
 
 w = 'weight'
+
+# transform FMLA xvars 
+adj_xvars <- c()
+for (i in xvars) {
+   # fill in missing values with means 
+   if (is.numeric(d_fmla[,i]) & any(unique(d_fmla[is.na(d_fmla[,i])==FALSE,i])!=c(0,1))) {
+      d_fmla[is.na(d_fmla[,i]), i] <- mean(d_fmla[,i], na.rm = TRUE)  
+   }
+   # if it is a dummy var, then take a random draw with probability = to the non-missing mean
+   if (is.numeric(d_fmla[,i]) & all(unique(d_fmla[is.na(d_fmla[,i])==FALSE,i])==c(0,1))) {
+      prob <- mean(d_fmla[,i], na.rm = TRUE)
+      d_fmla['rand']=runif(nrow(d_fmla))
+      d_fmla[i] <- with(d_fmla, ifelse(is.na(get(i)),ifelse(rand>prob,0,1),get(i)))    
+      d_fmla['rand'] <- NULL
+   }
+}
 
 d_filt <-d_fmla[complete.cases(d_fmla[,xvars]),]
 
@@ -169,16 +189,33 @@ d_acs[d_acs['age'] > 50, 'need_matdis'] = 0
 d_acs[d_acs['age'] > 50, 'take_bond'] = 0
 d_acs[d_acs['age'] > 50, 'need_bond'] = 0
 
+
 # just create some dummy values so this runs 
 d_acs$prop_pay= 0
 d_acs$dual_receiver= 1
 d_acs$exhausted_by= 0
+d_acs$wage_rr=.6
+leave_types <<- c("own","matdis","bond","illchild","illspouse","illparent")
+
+# extend leaves
+d_acs <- impute_leave_length(d_fmla, d_acs, ext_resp_len=TRUE, len_method='rand', rr_sensitive_leave_len=TRUE,wage_rr=.6,maxlen_DI=150,maxlen_PFL=20)
+
 
 # add in eligibility flags
 d_acs <- ELIGIBILITYRULES(d_acs, earnings=3840, weeks=NULL, ann_hours=NULL, minsize=NULL, 
    base_bene_level=.6, week_bene_min=89, formula_prop_cuts=NULL, formula_value_cuts=NULL,
    formula_bene_levels=NULL, elig_rule_logic= '(earnings & weeks & ann_hours & minsize)', 
    FEDGOV=FALSE, STATEGOV=FALSE, LOCALGOV=FALSE, SELFEMP=FALSE,PRIVATE=TRUE, dual_receiver=1)
+
+# add in participation values 
+d_acs <-UPTAKE(d_acs, own_uptake= .0822, matdis_uptake=.0274, bond_uptake=.0104, illparent_uptake=.0009,
+                  illspouse_uptake=.0015, illchild_uptake=.0006, full_particip=FALSE, wait_period=5,
+               maxlen_PFL= 20, maxlen_DI=150, maxlen_own =150, maxlen_matdis =150, maxlen_bond =20, maxlen_illparent=20, 
+               maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150,dual_receiver=1)
+
+# check caps 
+d_acs <- check_caps(d_acs, maxlen_PFL= 20, maxlen_DI=150, maxlen_own =150, maxlen_matdis =150, maxlen_bond =20, maxlen_illparent=20, 
+                    maxlen_illspouse =20, maxlen_illchild =20, maxlen_total=150)
 
 # tabulate values of yvars in imputed data set 
 d_agg <- data.frame(row.names=yvars)
@@ -187,6 +224,18 @@ for (yvar in c(yvars,'eligworker')) {
    d_agg[yvar,'count'] <- sum(d_acs[yvar], na.rm=TRUE)
 }
 write.csv(d_agg, file='output/test_ACS_yvar_counts.csv')
+
+# reorder some vars for ease of reading
+for (i in seq(1,80)) {
+   d_acs[paste0('PWGTP',i)] <- NULL
+}
+for (type in leave_types) {
+   for (stub in c('take_','need_','squo_length_','mnl_','length_','plen_','takes_up_')) {
+      var <- paste0(stub,type)
+      d_acs <- d_acs %>% select(-var,var)      
+   }
+}
+
 
 # save csv of final data set 
 write.csv(d_acs, file='output/test_ACS_RI.csv')

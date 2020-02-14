@@ -81,7 +81,7 @@ LEAVEPROGRAM <- function(d, sens_var,dual_receiver) {
 # currently impute method is hardcoded as a random draw from a specified distribution of FMLA observations
 # but this is a candidate for modual imputation
 
-impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_resp_len,len_method,rr_sensitive_leave_len,wage_rr,
+impute_leave_length <- function(d_train, d_test, ext_resp_len,len_method,rr_sensitive_leave_len,wage_rr,
                                 maxlen_DI,maxlen_PFL) { 
   
   #Days of leave taken - currently takes length from most recent leave only
@@ -122,7 +122,7 @@ impute_leave_length <- function(d_train, d_test, conditional, test_cond, ext_res
   
   # using actual leave length distribution data since FMLA only gives ranges of leave lengths
   d_lens <- read.csv('./csv_inputs/leave_length_dist.csv')
-  
+  #d_lens2 <- fromJSON(file = "./csv_inputs/length_distributions_exact_days.json")
   
   predict <- mapply(runRandDraw, yvar=yvars, train_filt=train_filts,test_filt=test_filts, maxlen=maxlen,
                     MoreArgs = list(d_train=d_lens, d_test=d_test, ext_resp_len=ext_resp_len, 

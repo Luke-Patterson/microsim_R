@@ -227,7 +227,7 @@ policy_simulation <- function(saveCSV=FALSE,
   #         the intra-FMLA imputed leave lengths a random draw from that imputed data
   #         would produced a biased 
   #         estimate of leave length
-  d_acs_imp <- impute_leave_length(d_fmla_orig, d_acs_imp, conditional, test_conditional, ext_resp_len,
+  d_acs_imp <- impute_leave_length(d_fmla_orig, d_acs_imp, ext_resp_len,
                                    len_method, rr_sensitive_leave_len,base_bene_level,maxlen_DI,maxlen_PFL)
   # OUTPUT: ACS data with lengths for leaves imputed
   if (runtime_measure==1){
