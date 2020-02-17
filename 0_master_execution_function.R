@@ -60,6 +60,10 @@ policy_simulation <- function(saveCSV=FALSE,
                               ABF_avg_state_tax=0,
                               ABF_payroll_tax=0,
                               ABF_bene=NULL,
+                              do_cleaning=FALSE,
+                              acs_dir=NULL,
+                              fmla_dir=NULL,
+                              out_dir="output/",
                               output='output', output_stats=NULL, random_seed=123, runtime_measure=0) { 
   
   

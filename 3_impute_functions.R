@@ -666,7 +666,7 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         est_df[is.na(est_df[yvar]),yvar] <- est_df[is.na(est_df[yvar]),squo_var]
         
         # if leave extension response ratio sensitivity is enabled, interpolate leave length to be somewhere 
-        # between the needed and status quo leave length
+        # between the max needed and status quo leave length
         # prop_pay -> status quo receipt
         # first, create maximum need length var or "mnl_" var - will be same as yvar if sensitivity not enabled.
         mnl_var <- sub('length','mnl',yvar)

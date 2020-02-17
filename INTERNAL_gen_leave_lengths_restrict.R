@@ -21,12 +21,14 @@ for (state_pay in c(0,1)){
       table <- d_filt %>% filter(get(leave)>0) %>% group_by(get(leave)) %>% summarise(sum(weight)) 
       names(table) <- c('Leave Length, Days', 'Count')
       table <- table %>% mutate(Percent = Count / sum(Count))
+      write.csv(table,file=paste0('output/',leave,'_PFL.csv'))
       PFL[[leave]] <- table
     }
     if (state_pay==0) {
       table <- d_filt %>% filter(get(leave)>0) %>% group_by(get(leave)) %>% summarise(sum(weight)) 
       names(table) <- c('Leave Length, Days', 'Count')
       table <- table %>% mutate(Percent = Count / sum(Count))
+      write.csv(table,file=paste0('output/',leave,'_NonPFL.csv'))
       NonPFL[[leave]] <- table
     }
   }

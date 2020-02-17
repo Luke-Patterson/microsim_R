@@ -28,7 +28,7 @@
 # 1.clean_fmla
 # ============================ #
 
-clean_fmla <-function(d_fmla, save_csv=FALSE) {
+clean_fmla <-function(d_fmla, save_csv=FALSE, restricted=FALSE) {
   
   # --------------------------------------------------------------------
   # demographic characteristics
@@ -207,47 +207,55 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   # length of leave for most recent leave
   # take mid points in days of categorical leave length questions 
   # round up/down on tie breaks in alternating fashion
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=0)
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==1,1,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==2,2,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==3,3,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==4,4,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==5,5,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==6,6,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==7,7,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==8,8,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==9,9,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==10,10,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==11,12,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==12,13,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==13,15,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==14,18,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==15,20,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==16,22,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==17,27,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==18,30,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==19,33,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==20,38,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==21,43,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==22,48,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==23,53,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==24,58,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==25,66,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==26,80,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==27,106,A19_1_vals))
-  d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==28,191,A19_1_vals))
   
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=0)
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==1,1,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==2,2,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==3,3,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==4,4,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==5,5,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==6,8,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==7,10,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==8,15,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==9,41,A19_2_vals))
-  d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==10,90,A19_2_vals))
+  # get length values differently if using restricted or PUF data set, toggled by restricted value
+  if (restricted==TRUE){
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=A19_1_CAT_rev)
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=A19_2_CAT_rev)
+  } else {
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=0)
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==1,1,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==2,2,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==3,3,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==4,4,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==5,5,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==6,6,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==7,7,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==8,8,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==9,9,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==10,10,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==11,12,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==12,13,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==13,15,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==14,18,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==15,20,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==16,22,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==17,27,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==18,30,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==19,33,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==20,38,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==21,43,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==22,48,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==23,53,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==24,58,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==25,66,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==26,80,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==27,106,A19_1_vals))
+    d_fmla <- d_fmla %>% mutate(A19_1_vals=ifelse(is.na(A19_1_CAT)==0 & A19_1_CAT==28,191,A19_1_vals))
+    
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=0)
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==1,1,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==2,2,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==3,3,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==4,4,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==5,5,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==6,8,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==7,10,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==8,15,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==9,41,A19_2_vals))
+    d_fmla <- d_fmla %>% mutate(A19_2_vals=ifelse(is.na(A19_2_vals)==0 & A19_2_vals==10,90,A19_2_vals))
+  }
+ 
   
   d_fmla <- d_fmla %>% mutate(length = ifelse(is.na(A20) == FALSE & A20 == 2, A19_2_vals, A19_1_vals))
   # 10/9, Luke: changing to be longest leave, regardless of if it is different from most recent leave or not
@@ -348,12 +356,15 @@ clean_fmla <-function(d_fmla, save_csv=FALSE) {
   
   # state program
   d_fmla <- d_fmla %>% mutate(recStateFL = ifelse(A48b == 1, 1, 0))
+  d_fmla <- d_fmla %>% mutate(recStateFL = ifelse(is.na(A48b) == TRUE, NA, recStateFL))
   d_fmla <- d_fmla %>% mutate(recStateFL = ifelse(is.na(recStateFL) == TRUE & anypay == 0, 0, recStateFL))
   
   d_fmla <- d_fmla %>% mutate(recStateDL = ifelse(A48c == 1, 1, 0))
+  d_fmla <- d_fmla %>% mutate(recStateDL = ifelse(is.na(A48c) == TRUE, NA, recStateDL))
   d_fmla <- d_fmla %>% mutate(recStateDL = ifelse(is.na(recStateDL) == TRUE & anypay == 0, 0, recStateDL))
   
   d_fmla <- d_fmla %>% mutate(recStatePay = ifelse(recStateFL == 1 | recStateDL == 1, 1, 0))
+  d_fmla <- d_fmla %>% mutate(recStatePay = ifelse(is.na(recStateFL) == TRUE | is.na(recStateDL) == TRUE, NA, recStatePay))
   
   # weights
   w_emp <- d_fmla %>% filter(LEAVE_CAT == 3) %>% summarise(w_emp = mean(weight))
@@ -743,7 +754,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   # use select
   replicate_weights <- paste0('PWGTP',seq(1,80))
   d <- d[c('SERIALNO',"nochildren", "lnfaminc", "faminc", "lnearn","fem_cu6","fem_c617","fem_cu6and617","fem_nochild",
-           "age", "a_age", "widowed", "divorced", "hiemp",
+           "age", "a_age",  "hiemp", "widowed", "divorced", 'married',
            "separated", "nevermarried", "male", "female", "agesq", "ltHS", "someCol", "BA", 
            "GradSch", "black", "white", "asian", "other",'native', "hisp", "OCC", "occ_1", "occ_2", "occ_3", 
            "occ_4", "occ_5", "occ_6", "occ_7", "occ_8", "occ_9", "occ_10", "ind_1", "ind_2", "ind_3", "ind_4", 

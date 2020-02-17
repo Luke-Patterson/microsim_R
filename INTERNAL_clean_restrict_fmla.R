@@ -13,6 +13,6 @@ fmla_csv <- 'fmla_2012_employee_restrict_puf.csv'
 # read in FMLA
 d_fmla <- read.csv(paste0("./restricted_data/", fmla_csv))
 #INPUT: Raw file for FMLA survey
-d_fmla <- clean_fmla(d_fmla, save_csv=FALSE)
+d_fmla <- clean_fmla(d_fmla, save_csv=FALSE, restricted=TRUE)
 
 saveRDS(d_fmla,file=paste0("./restricted_data/","d_fmla_restrict.rds"))
