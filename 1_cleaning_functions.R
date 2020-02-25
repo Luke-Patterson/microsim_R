@@ -753,7 +753,7 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
   # strip to only required variables to save memory
   # use select
   replicate_weights <- paste0('PWGTP',seq(1,80))
-  d <- d[c('SERIALNO',"nochildren", "lnfaminc", "faminc", "lnearn","fem_cu6","fem_c617","fem_cu6and617","fem_nochild",
+  d <- d[c('SERIALNO','SPORDER',"nochildren", "lnfaminc", "faminc", "lnearn","fem_cu6","fem_c617","fem_cu6and617","fem_nochild",
            "age", "a_age",  "hiemp", "widowed", "divorced", 'married',
            "separated", "nevermarried", "male", "female", "agesq", "ltHS", "someCol", "BA", 
            "GradSch", "black", "white", "asian", "other",'native', "hisp", "OCC", "occ_1", "occ_2", "occ_3", 
@@ -763,8 +763,8 @@ clean_acs <-function(d,d_hh,save_csv=FALSE) {
            "ndep_old",'empgov_fed','empgov_st', 'wkhours', 'empgov_loc', 'ST','POWSP','age_cat','faminc_cat','employed',
            'married','HSgrad','BAplus')]
 
-  # id variable
-  d$id <- as.numeric(rownames(d))
+  # id variable from SERIALNO [Household ID] and SPORDER [Individual ID within Household]
+  d$id <- as.numeric(paste0(as.character(d$SERIALNO),as.character(d$SPORDER)))
   d <- d[order(d$id),]
   
 

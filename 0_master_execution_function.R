@@ -332,13 +332,14 @@ policy_simulation <- function(saveCSV=FALSE,
   # Apply type-specific elig adjustments 
   d_acs_imp <- DIFF_ELIG(d_acs_imp, own_elig_adj, illspouse_elig_adj, illchild_elig_adj,
                          illparent_elig_adj, matdis_elig_adj, bond_elig_adj)
+
   
   # final clean up 
   # INPUT: ACS file
   d_acs_imp <- CLEANUP(d_acs_imp, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_own, maxlen_matdis, maxlen_bond, 
                        maxlen_illparent, maxlen_illspouse, maxlen_illchild, maxlen_total,maxlen_DI,maxlen_PFL)
   # OUTPUT: ACS file with finalized leave taking, program uptake, and benefits received variables
-  
+
   # Running ABF module
   if (ABF_enabled==TRUE) {
     d_acs_imp <- run_ABF(d_acs_imp, ABF_elig_size, ABF_max_tax_earn, ABF_bene_tax, ABF_avg_state_tax, 

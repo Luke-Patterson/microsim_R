@@ -653,15 +653,16 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
   for (i in leave_types) {
     take_var=paste("take_",i,sep="")
     need_var=paste("need_",i,sep="")
+    length_var = paste('length_',i,sep="")
     uptake_val=paste(i,"_uptake",sep="")
     uptake_var=paste0('takes_up_',i)
     plen_var= paste("plen_",i, sep="")
     
     # generate uptake column based on uptake val
     elig_d <- d %>% filter(eligworker==1)
-    pop_target <- sum(elig_d %>% select(PWGTP))*get(uptake_val)
+    pop_target <- sum(elig_d %>% dplyr::select(PWGTP))*get(uptake_val)
     # filter to only those eligible for the program and taking or needing leave
-    samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1))
+    samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1) & get(length_var)>wait_period)
     # guess samp size needed based on number of rows and uptake value
     samp_size <- round(nrow(elig_d) * get(uptake_val))
     # if full pariticipation is enabled, take the entire sample
@@ -683,7 +684,7 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     # now <- Sys.time()
     # add/remove individuals to get to pop target
     samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
-    
+    start <- Sys.time()
     #time_elapsed('before pop target')
     if (adj_sample==TRUE){ 
       if (samp_sum> pop_target) {
@@ -700,6 +701,8 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
         }
       }
     }
+    print(Sys.time()-start)
+    browser()
     samp_selected <- samp_frame[samp_idx,]
     samp_selected[uptake_var] <- 1
     # print('time taken for sampling addition')
@@ -746,8 +749,12 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     d[plen_var] <- with(d, ifelse(change_flag==1 & !is.na(exhausted_by)& dual_receiver==0,
                                   ifelse(get(paste('length_',i,sep="")) > exhausted_by & exhausted_by>wait_period, 
                                          get(plen_var) - exhausted_by + wait_period, get(plen_var)), get(plen_var)))
+    
+    ptake_var=paste("ptake_",i,sep="")
+    d[ptake_var] <- with(d, ifelse(get(plen_var)>0 & get(take_var)>0,1,0))
   }
 
+  
   # make sure those with particip_length 0 are also particip 0
   d <- d %>% mutate(particip= ifelse(particip_length==0,0, particip))
 
@@ -1037,6 +1044,7 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
   # INPUT: ACS data set 
   d <- check_caps(d,maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
                   maxlen_total, maxlen_DI, maxlen_PFL)
+  
   # OUTPUT: ACS data set with participating leave length capped at user-specified program maximums
   
   # cap benefit payments at program's weekly benefit cap
@@ -1084,15 +1092,15 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
     # dummies for those that took a given type of leave, and collected non-zero benefits for it
     take_var=paste("take_",i,sep="")
     ptake_var=paste("ptake_",i,sep="")
-    d[ptake_var] <- with(d, ifelse(get(ben_var)>0 & get(take_var)>0,1,0))
+    d[ptake_var] <- with(d, ifelse(get(plen_var)>0 & get(take_var)>0,1,0))
     
     # dummies for PFL, DI leave types
     if (i=='own'|i=='matdis') {
-      d['ptake_DI'] <- with(d, ifelse(get(ben_var)>0 & get(take_var)>0,1,ptake_DI))  
+      d['ptake_DI'] <- with(d, ifelse(get(plen_var)>0 & get(take_var)>0,1,ptake_DI))  
     }
     
     if (i=='bond'|i=='illspouse'|i=='illparent'|i=='illchild') {
-      d['ptake_PFL'] <- with(d, ifelse(get(ben_var)>0 & get(take_var)>0,1,ptake_PFL))  
+      d['ptake_PFL'] <- with(d, ifelse(get(plen_var)>0 & get(take_var)>0,1,ptake_PFL))  
     }
     # create taker and needer vars
     d['taker'] <- 0
@@ -1105,9 +1113,6 @@ CLEANUP <- function(d, week_bene_cap,week_bene_cap_prop,week_bene_min, maxlen_ow
     }
     d$needer[is.na(d$needer)] <- 0
     
-    # clean up vars
-    uptake_var=paste0('takes_up_',i)
-    d <- d[, !(names(d) %in% c(uptake_var))]
   }
   
   return(d)

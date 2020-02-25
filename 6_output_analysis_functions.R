@@ -11,7 +11,7 @@
 # Table of Contents
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 1. replicate_weights_SE
-# standard_summary_stats
+# see 5_ABF_functions.R
 
 
 
@@ -75,7 +75,7 @@ state_compar_stats <-function(d, output) {
     ptake_vars=c(ptake_vars,paste("ptake_",i,sep=""))
     ptake_names=c(ptake_names, paste("Participated for",i,'leave'))
     plen_vars=c(plen_vars,paste("plen_",i,sep=""))
-    plen_names=c(plen_names, paste("Num of Weeks Participated for",i,'leave'))
+    plen_names=c(plen_names, paste("Num of Days Participated for",i,'leave'))
   }
   
   # define columns of csv
@@ -110,7 +110,7 @@ state_compar_stats <-function(d, output) {
   
   var_names=c('Workers eligible for leave program',
       ptake_names, 'Participated for own illness or maternal disability leave', 'Participated for ill relative or child bonding leave', 'Participated for any reason',
-      plen_names, 'Num of Weeks Participated for own illness or maternal disability leave', 'Num of Weeks Participated for ill relative or child bonding leave', 
+      plen_names, 'Num of Days Participated for own illness or maternal disability leave', 'Num of Days Participated for ill relative or child bonding leave', 
       'Benefits Received ($), for own illness or maternal disability leave','Benefits Received ($), for for ill relative or child bonding leave',
               'Benefits Received ($), total')
   d_out=data.frame(var_names,mean,SE,CI,total, total_SE, total_CI)
@@ -118,22 +118,22 @@ state_compar_stats <-function(d, output) {
   # divide by 5 to match format of state actual data output
   for (j in c('mean','SE')) {
     for (i in leave_types ) {
-      d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j]/5
+      d_out[d_out$var_names==paste('Num of Days Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Days Participated for', i, 'leave'),j]/5
     }
-    d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j] <- 
-      d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j]/5
-    d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j] <- 
-      d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5
+    d_out[d_out$var_names=='Num of Days Participated for own illness or maternal disability leave',j] <- 
+      d_out[d_out$var_names=='Num of Days Participated for own illness or maternal disability leave',j]/5
+    d_out[d_out$var_names=='Num of Days Participated for ill relative or child bonding leave',j] <- 
+      d_out[d_out$var_names=='Num of Days Participated for ill relative or child bonding leave',j]/5
   }
   # transform pop nums to weeks as well
   for (j in c('total','total_SE')) {
     for (i in leave_types ) {
-      d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Weeks Participated for', i, 'leave'),j]/5
+      d_out[d_out$var_names==paste('Num of Days Participated for', i, 'leave'),j] <- d_out[d_out$var_names==paste('Num of Days Participated for', i, 'leave'),j]/5
     }
-    d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j] <- 
-      d_out[d_out$var_names=='Num of Weeks Participated for own illness or maternal disability leave',j]/5
-    d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j] <- 
-      d_out[d_out$var_names=='Num of Weeks Participated for ill relative or child bonding leave',j]/5
+    d_out[d_out$var_names=='Num of Days Participated for own illness or maternal disability leave',j] <- 
+      d_out[d_out$var_names=='Num of Days Participated for own illness or maternal disability leave',j]/5
+    d_out[d_out$var_names=='Num of Days Participated for ill relative or child bonding leave',j] <- 
+      d_out[d_out$var_names=='Num of Days Participated for ill relative or child bonding leave',j]/5
   }
   
   # regenerate CI's with new SE's, means

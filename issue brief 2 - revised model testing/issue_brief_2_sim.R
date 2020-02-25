@@ -31,7 +31,7 @@
                             dual_receiver = 1,
                             ext_resp_len = TRUE, 
                             fmla_protect=FALSE,
-                            ext_base_effect=TRUE,
+                            ext_base_effect=FALSE,
                             rr_sensitive_leave_len=FALSE,
                             topoff_rate=.06, topoff_minlength=20, 
                             bene_effect=FALSE, wait_period=5, clone_factor=1, week_bene_cap=795, week_bene_min=89,
