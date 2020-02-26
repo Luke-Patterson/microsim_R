@@ -41,7 +41,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               own_elig_adj=1, illspouse_elig_adj=1, illchild_elig_adj=1, 
                               illparent_elig_adj=1, matdis_elig_adj=1, bond_elig_adj=1,
                               clone_factor=1, sens_var = 'resp_len', progalt_post_or_pre ='post',
-                              ext_resp_len = TRUE, len_method = 'rand', 
+                              ext_resp_len = TRUE,  
                               rr_sensitive_leave_len=TRUE,
                               place_of_work = FALSE,
                               state = '',
@@ -110,7 +110,7 @@ policy_simulation <- function(saveCSV=FALSE,
     return("OK")
   }
   
-  global.libraries <- c('readr','tibble','DMwR','xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
+  global.libraries <- c('pkgcond','readr','tibble','DMwR','xgboost','bnclassify', 'randomForest','magick','stats', 'rlist', 'MASS', 'plyr', 'dplyr', 
                         'survey', 'class', 'dummies', 'varhandle', 'oglmx', 
                         'foreign', 'ggplot2', 'reshape2','e1071','pander','ridge')
   
@@ -125,8 +125,7 @@ policy_simulation <- function(saveCSV=FALSE,
   if (!is.null(random_seed)) {
     set.seed(random_seed)
   }
-  
-
+ 
   #========================================
   # 1. Cleaning 
   #========================================
@@ -232,7 +231,7 @@ policy_simulation <- function(saveCSV=FALSE,
   #         would produced a biased 
   #         estimate of leave length
   d_acs_imp <- impute_leave_length(d_fmla_orig, d_acs_imp, ext_resp_len,
-                                   len_method, rr_sensitive_leave_len,base_bene_level,maxlen_DI,maxlen_PFL)
+                                   rr_sensitive_leave_len,base_bene_level,maxlen_DI,maxlen_PFL)
   # OUTPUT: ACS data with lengths for leaves imputed
   if (runtime_measure==1){
     time_elapsed('finished imputing leave length')
@@ -379,7 +378,9 @@ policy_simulation <- function(saveCSV=FALSE,
       take_compar(d_acs_imp, output)
     }  
   }
-  
+  print('=====================================')
+  print('Simulation successfully completed')
+  print('=====================================')
   return(d_acs_imp)
 }
 

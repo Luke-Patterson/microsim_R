@@ -48,7 +48,15 @@ impute_fmla_to_acs <- function(d_fmla, d_acs, impute_method,xvars,kval,xvar_wgts
   # xvars - dependent variables used by imputation method. Must be present and have same name in 
   #         both fmla and acs data sets.
   
-  # ---------------------------------------------------------------------------------------------------------
+  # dplyr::filter_() is softly depreciated: https://dplyr.tidyverse.org/reference/se-deprecated.html
+  # The standard evalution of string filters is required throughout 3_impute_functions.R.
+  # However, depsite the site's claims filter() now functions with both standard and non-standard evaluation,
+  # filter() returns an error when fed a string condition. As a result, we need to use the filter_() function 
+  # for filters to work properly. Despite their soft depreciation, We are going to suppress the filter_() depriciation warnings
+  # to not confuse users. This is also noted in the model's accompanying Technical Documentation.
+  suppress_warnings(dplyr::filter_)
+  
+    # ---------------------------------------------------------------------------------------------------------
   # A. Leave characteristics needed: leave taking behavior, proportion of income paid by employer,
   #     whether leave was affordable or not
   # ---------------------------------------------------------------------------------------------------------
@@ -297,7 +305,7 @@ KNN1_scratch <- function(d_train, d_test, imp_var, train_filt, test_filt, xvars,
   temp <- unlist(temp)
   temp <- cbind(test["id"],as.data.frame(unlist(temp)))
   colnames(temp)[colnames(temp)=="unlist(temp)"] <- "nbor_id"
-  temp <- join(temp[c("id","nbor_id")], train[c("nbor_id",imp_var)], by=c("nbor_id"), type="left")
+  temp <-plyr::join(temp[c("id","nbor_id")], train[c("nbor_id",imp_var)], by=c("nbor_id"), type="left")
   temp <- temp[c("id",imp_var)]
   return(temp)
 }
@@ -535,128 +543,90 @@ runOrdinalEstimate <- function(d_train,d_test, formula, test_filt,train_filt, va
 # 1Bc. runRandDraw
 # ============================ #
 # run a random draw for leave length 
-runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, len_method, 
-                        rr_sensitive_leave_len,wage_rr,maxlen) {
-  # filter training cases
-  d_temp <- d_train %>% filter_(train_filt)
-  train <- d_temp %>% filter(complete.cases(yvar))
-  
-  # if weight variable not in the train data set, generate it as a column of 1's
-  if ('weight' %in% colnames(train)==FALSE){
-    train['weight'] <- 1
-  }
-  
-  # log FMLA sample sizes
-  if (makelog == TRUE) {
-    cat("", file = log_name, sep="\n", append = TRUE)
-    cat("------------------------------", file = log_name, sep="\n", append = TRUE)
-    cat(paste("Filtered FMLA Sample Size:", nrow(train)), file = log_name, sep="\n", append = TRUE)
-    cat(paste("Formula: Random draw from variable",yvar), file = log_name, sep="\n", append = TRUE)
-    cat(paste("Filter condition:", train_filt), file = log_name, sep="\n", append = TRUE)
-    cat(paste("Weighted mean of var:",weighted.mean(train[,yvar], 
-                                                      train[,'weight'], na.rm = TRUE)), file = log_name, sep="\n", append = TRUE)  
-    
-    cat("------------------------------", file = log_name, sep="\n", append = TRUE)
-    cat("", file = log_name, sep="\n", append = TRUE)
-  }
-  
+runRandDraw <- function(d, yvar, filt, leave_dist, ext_resp_len, rr_sensitive_leave_len,wage_rr,maxlen) {
+
   # filter test cases
-  test <- d_test %>% filter_(test_filt)
+  d_filt <- d %>% filter_(filt)
   
-  # verify that mean_diffs are >1 in FMLA for all types (counterfact lengths should be greater
-  # than status quo)
-  # this is a check for when len_method == 'mean'
-  # mean_diff = mean(train %>% filter(resp_len == 0) %>% pull(yvar), na.rm=TRUE) -
-  #   mean(train %>% filter(resp_len == 1) %>% pull(yvar), na.rm=TRUE) 
-  # mean_ratio = mean(train %>% filter(resp_len == 0) %>% pull(yvar), na.rm=TRUE) /
-  #   mean(train %>% filter(resp_len == 1) %>% pull(yvar), na.rm=TRUE) 
-  # print(c(yvar, mean(train %>% filter(resp_len == 0) %>% pull(yvar), na.rm=TRUE), 
-  #         mean(train %>% filter(resp_len == 1) %>% pull(yvar), na.rm=TRUE), mean_ratio,
-  #         mean_diff))
+  # filter to distribution of lengths for the leave type
+  leave_dist['Cumulative'] <- ave(leave_dist$Percent, leave_dist[,c('Leave.Type','State.Pay')], FUN=cumsum)
+  filt_dist <- leave_dist %>% filter(Leave.Type==yvar & State.Pay==0)
   
   
-  if (nrow(test)==0) {
+  # function to draw a leave length from the distribution
+  draw_length <- function(dist) {
+    return(sample())
+  }
+   
+  # if filter means no rows present, stop and return nothing  
+  if (nrow(d_filt)==0) {
     return()
   }
   
-  if (nrow(test)!=0) {
-    # random draw
-    if (!yvar %in% colnames(test)) {
-      test[yvar]=NA
-    }
+  if (nrow(d_filt)!=0) {
     
+    # random draw of leave length
+    # first, set up objects needed to store results
+    if (!yvar %in% colnames(d_filt)) {
+      d_filt[yvar]=NA
+    }
     squo_var = paste0('squo_',yvar)
     est_df <- data.frame(matrix(ncol = 3, nrow = 0))  
     colnames(est_df) <- c('id', squo_var, yvar)
+    
     # status quo length
-    if (nrow(test)!= 0 & nrow(train)!= 0 ) {
-      #train_samp_restrict <- function(x) train %>% sample_n(1, weight = weight) %>% dplyr::select(yvar)
-      test[squo_var] <- train %>% sample_n(nrow(test), weight = weight, replace = TRUE) %>% dplyr::select(yvar)
-      est_df <- rbind(est_df, test[c('id', squo_var)])
-    }
+    d_filt[squo_var] <-sample(filt_dist$Leave.Length..Days, size=nrow(d_filt), replace=TRUE, prob = filt_dist$Percent)
+    est_df <- rbind(est_df, d_filt[c('id', squo_var)])
 
     # changing counterfactual length option:
     # for constrained individuals, draw length from unconstrained draws
     if (ext_resp_len==TRUE) {
-      # for those with resp_len = 1, we draw leave length from 
-      # the unconstrained distribution of training leave lengths
-      temp_train <- train %>% filter(resp_len == 0)
-      temp_test <- test %>% filter(resp_len == 1)
+      temp_filt <- d_filt %>% filter(resp_len == 1)
       
+      # make sure columns from est_df are in temp_filt
       # old merge code caused memory issues. using match instead
       #temp_test <- merge(temp_test, est_df, by='id', all.x=TRUE)
       for (i in names(est_df)) {
-        if (i %in% names(temp_test)==FALSE){
-          temp_test[i] <- est_df[match(temp_test$id, est_df$id), i]    
+        if (i %in% names(temp_filt)==FALSE){
+          temp_filt[i] <- est_df[match(temp_filt$id, est_df$id), i]    
         }
       }
-      
-      # if these dataframes are not empty, we find the counterfactual lengths
-      if (nrow(temp_test)!= 0 & nrow(temp_train)!= 0 ) {
-        # mean method - find proportional difference of resp=1 and resp=0 mean, and multiply 
-        # status quo lengths by that factor.
-        if (len_method=='mean') {
-          train_samp_cfact <- function(x,ml=maxlen) {
-            # for some reason squo_var turns to string when this function is applied, making sure 
-            # to revert that back to numeric before doing comparison operations.
-            squo_len <- as.numeric(x[squo_var])
-            if (nrow(temp_train %>% filter(get(yvar)> squo_len))!=0) {
-              data <- temp_train %>% filter(get(yvar)> squo_len) %>% dplyr::select(yvar, 'weight')
-              mean <- weighted.mean(x= data[ ,yvar], w= data[ , 'weight'])
-              result <- temp_train %>% dplyr::select(yvar) + mean
-              # top code result at 261 days - how many working days there are in a year, and at program max length, but no less than squo
-              return(max(squo_len,min(result,261,ml)))
-            }
-            else {
-              return(x[squo_var])
-            }            
+  
+      # if there are resp_len==1 individuals, we find the counterfactual lengths
+      if (nrow(temp_filt)!= 0) {
+        
+        draw_len_cfact <- function(x,ml=maxlen) {
+          # for some reason squo_var turns to string when this function is applied, making sure 
+          # to revert that back to numeric before doing comparison operations.
+          squo_len <- as.numeric(x[squo_var])
+          
+          # take random draw conditional on being greater than squo_len
+          d_result <- filt_dist %>% filter(Leave.Length..Days > squo_len) 
+          if (nrow(d_result) > 1) { 
+            
+            result <- sample(d_result$Leave.Length..Days, size=1, prob = d_result$Percent)
+            
+          } else if (nrow(d_result) == 1) { 
+            
+            result <- d_result[1, 'Leave.Length..Days']
+            
+          } else if (nrow(d_result) == 0) { 
+            
+            result <- squo_len
+            
           }
+          
+          # top code result at 261 days - how many working days there are in a year, and at program max length, but no less than squo
+          return(max(squo_len,min(result,261,ml)))
         }
         
-        # random draw method - take random draw from training sample of lengths less than or equal to
-        # the counterfactual leave length
-        if (len_method=='rand') {
-          train_samp_cfact <- function(x,ml=maxlen) {
-            # for some reason squo_var turns to string when this function is applied, making sure 
-            # to revert that back to numeric before doing comparison operations.
-            squo_len <- as.numeric(x[squo_var])
-            if (nrow(temp_train %>% filter(get(yvar)> squo_len))!=0) {
-              result <- temp_train %>% filter(get(yvar)> squo_len) %>% sample_n(1, weight = weight) %>% dplyr::select(yvar)
-              # top code result at 261 days - how many working days there are in a year, and at program max length, but no less than squo
-              return(max(squo_len,min(result,261,ml)))
-            }
-            else {
-              return(x[squo_var])
-            }
-          }
-        }
-
         # adjust squo lengths by factor to get counterfact lengths for resp_len == 1z
-        temp_test[yvar] <- data.frame(unlist(apply(temp_test, 1, train_samp_cfact)))
+        temp_filt[yvar] <- data.frame(unlist(apply(temp_filt, 1, draw_len_cfact)))
+
         
         # old merge code caused memory issues. using match instead
         #est_df <- merge(temp_test[c('id', yvar)], est_df, by='id', all.y=TRUE)  
-        est_df[yvar] <- temp_test[match(est_df$id,temp_test$id), yvar]    
+        est_df[yvar] <- temp_filt[match(est_df$id,temp_filt$id), yvar]    
         
         # for the rest, resp_len = 0 and so leave length does not respond to presence or absence of program, 
         # so that variable remains the same
@@ -672,12 +642,13 @@ runRandDraw <- function(d_train,d_test,yvar,train_filt,test_filt, ext_resp_len, 
         mnl_var <- sub('length','mnl',yvar)
         est_df[mnl_var] <- est_df[yvar]
         est_df[is.na(est_df[mnl_var]),mnl_var] <-0
+        
         if (rr_sensitive_leave_len==TRUE) {
-          merge_ids <-match(est_df$id,d_test$id)
+          merge_ids <-match(est_df$id,d_filt$id)
           # load variables from test data needed for interpolation
-          est_df['prop_pay'] <- d_test[merge_ids, 'prop_pay'] 
-          est_df['resp_len'] <- d_test[merge_ids, 'resp_len'] 
-          est_df['dual_receiver'] <- d_test[merge_ids, 'dual_receiver'] 
+          est_df['prop_pay'] <- d_filt[merge_ids, 'prop_pay'] 
+          est_df['resp_len'] <- d_filt[merge_ids, 'resp_len'] 
+          est_df['dual_receiver'] <- d_filt[merge_ids, 'dual_receiver'] 
           # set couterfactual leave taking var equal to Z+ (X-Z)*(rrp-rre)/(1-rre), where:
           # Z is status quo leave length
           # X is maximum length needed
@@ -904,7 +875,7 @@ Naive_Bayes <- function(d_train, d_test, yvars, train_filts, test_filts, weights
     }
     else {
       wanbia_imp[yvars[[i]]] <- as.data.frame(ifelse(wanbia_imp[2]>wanbia_imp['rand'],1,0)) 
-      #browser()
+
     }
     
     # add imputed value to test data set
@@ -1140,10 +1111,7 @@ svm_impute <- function(d_train, d_test, yvars, train_filts, test_filts, weights,
     }
     impute <- as.data.frame(unfactor(predict(object=model, newdata = ftest[temp_xvars])))
     colnames(impute)[1] <- yvars[i]
-    if (i=='prop_pay'){
-      #browser()
-    }
-
+    
     # add imputed value to test data set
     impute <- cbind(ftest['id'], impute)
     # old merge code, caused memory issues. using match instead

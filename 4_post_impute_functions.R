@@ -45,7 +45,7 @@ LEAVEPROGRAM <- function(d, sens_var,dual_receiver) {
     d[,take_var] <- ifelse(d[,sens_var]==1 & d[,need_var]==1 & !is.na(d[,sens_var]) & !is.na(d[,need_var]),1,d[,take_var])
   }
   
-  # generate dual receiver (can receive both state and employer benefits) column based on proportion specified in dual_receiver parameter
+  # generate dual receiver (can receive both state and employer benefits simultaenously) column based on proportion specified in dual_receiver parameter
   pop_target <- sum(d$PWGTP)*dual_receiver
   # guess samp size needed based on mean weighted
   samp_size <- nrow(d) * dual_receiver
@@ -81,7 +81,7 @@ LEAVEPROGRAM <- function(d, sens_var,dual_receiver) {
 # currently impute method is hardcoded as a random draw from a specified distribution of FMLA observations
 # but this is a candidate for modual imputation
 
-impute_leave_length <- function(d_train, d_test, ext_resp_len,len_method,rr_sensitive_leave_len,wage_rr,
+impute_leave_length <- function(d_train, d_test, ext_resp_len,rr_sensitive_leave_len,wage_rr,
                                 maxlen_DI,maxlen_PFL) { 
   
   #Days of leave taken - currently takes length from most recent leave only
@@ -95,14 +95,7 @@ impute_leave_length <- function(d_train, d_test, ext_resp_len,len_method,rr_sens
   #   Leave lengths are the same, except for own leaves, which are instead taken from the distribution of leave takers in FMLA survey reporting 
   #   receiving some pay from state programs. 
   
-  train_filts <- c(own = "length_own>0 & is.na(length_own)==FALSE & recStatePay==0",
-                   illspouse = "length_illspouse>0 & is.na(length_illspouse)==FALSE & recStatePay==0",
-                   illchild = "length_illchild>0 & is.na(length_illchild)==FALSE & recStatePay==0",
-                   illparent = "length_illparent>0 & is.na(length_illparent)==FALSE & recStatePay==0",
-                   matdis = "length_matdis>0 & is.na(length_matdis)==FALSE & recStatePay==0",
-                   bond = "length_bond>0 & is.na(length_bond)==FALSE & recStatePay==0")
-  
-  test_filts <- c(own = "(take_own==1|need_own==1)",
+filts <- c(own = "(take_own==1|need_own==1)",
                   illspouse = "(take_illspouse==1|need_illspouse==1) & nevermarried == 0 & divorced == 0",
                   illchild = "(take_illchild==1|need_illchild==1)",
                   illparent = "(take_illparent==1|need_illparent==1)",
@@ -121,12 +114,12 @@ impute_leave_length <- function(d_train, d_test, ext_resp_len,len_method,rr_sens
   #        sample from which to impute length from (training data), and presence/absence of program
   
   # using actual leave length distribution data since FMLA only gives ranges of leave lengths
-  d_lens <- read.csv('./csv_inputs/leave_length_dist.csv')
+  d_lens <- read.csv('./csv_inputs/leave_length_prob_dist.csv')
   #d_lens2 <- fromJSON(file = "./csv_inputs/length_distributions_exact_days.json")
   
-  predict <- mapply(runRandDraw, yvar=yvars, train_filt=train_filts,test_filt=test_filts, maxlen=maxlen,
-                    MoreArgs = list(d_train=d_lens, d_test=d_test, ext_resp_len=ext_resp_len, 
-                                    len_method= len_method,rr_sensitive_leave_len=rr_sensitive_leave_len,
+  predict <- mapply(runRandDraw, yvar=yvars, filt=filts, maxlen=maxlen,
+                    MoreArgs = list(leave_dist=d_lens, d=d_test, ext_resp_len=ext_resp_len, 
+                                    rr_sensitive_leave_len=rr_sensitive_leave_len,
                                     wage_rr=wage_rr)
                                     , SIMPLIFY = FALSE)
   # Outputs: data sets of imputed leave length values for ACS or FMLA observations requiring them
@@ -191,7 +184,7 @@ CLONEFACTOR <- function(d, clone_factor) {
     num_clone <- round((clone_factor-1)*nrow(d), digits=0)
     d_clones <- data.frame(sample(d$id,num_clone,replace=TRUE))
     colnames(d_clones)[1] <- "id"
-    d_clones <- join(d_clones,d,by='id', type='left')
+    d_clones <- plyr :: join(d_clones,d,by='id', type='left')
     d_clones$clone_flag=1
     d <- rbind(d,d_clones)
     # reset id var
@@ -241,7 +234,7 @@ PAY_SCHEDULE <- function(d) {
   d <- d %>% mutate(Total_paid= ifelse(prop_pay>.5 & prop_pay<1, "More than half",Total_paid))
   
   # merge probabilities in
-  d <- plyr::join(d,d_prob, type="left",match="all",by="Total_paid")
+  d <- plyr :: join(d,d_prob, type="left",match="all",by="Total_paid")
 
   # assign pay schedules
   d['rand']=runif(nrow(d))
@@ -662,7 +655,8 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     elig_d <- d %>% filter(eligworker==1)
     pop_target <- sum(elig_d %>% dplyr::select(PWGTP))*get(uptake_val)
     # filter to only those eligible for the program and taking or needing leave
-    samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1) & get(length_var)>wait_period)
+    min_takeup_cpl <- 0
+    samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1) & get(length_var)>wait_period+min_takeup_cpl)
     # guess samp size needed based on number of rows and uptake value
     samp_size <- round(nrow(elig_d) * get(uptake_val))
     # if full pariticipation is enabled, take the entire sample
@@ -684,7 +678,7 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     # now <- Sys.time()
     # add/remove individuals to get to pop target
     samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
-    start <- Sys.time()
+
     #time_elapsed('before pop target')
     if (adj_sample==TRUE){ 
       if (samp_sum> pop_target) {
@@ -701,8 +695,6 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
         }
       }
     }
-    print(Sys.time()-start)
-    browser()
     samp_selected <- samp_frame[samp_idx,]
     samp_selected[uptake_var] <- 1
     # print('time taken for sampling addition')
@@ -909,7 +901,7 @@ BENEFITEFFECT <- function(d) {
   d['finc_cat']=as.numeric(d[,'finc_cat'])
   
   # recalculate uptake based on bene_diff
-  d <- join(d,d_prob, type="left",match="all",by=c("bene_diff", "finc_cat"))
+  d <- plyr :: join(d,d_prob, type="left",match="all",by=c("bene_diff", "finc_cat"))
   d['rand']=runif(nrow(d))
   
   # exclude those participants that will not be affected by benefit effect
