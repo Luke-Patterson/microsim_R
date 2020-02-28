@@ -639,7 +639,7 @@ EXTENDLEAVES <-function(d_train, d_test,wait_period, ext_base_effect,
 UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
                    illspouse_uptake, illchild_uptake, full_particip, wait_period, 
                    maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
-                   maxlen_total, maxlen_DI, maxlen_PFL,dual_receiver) {
+                   maxlen_total, maxlen_DI, maxlen_PFL,dual_receiver,min_takeup_cpl) {
   
   # calculate uptake -> days of leave that program benefits are collected
   d['particip_length']=0
@@ -655,7 +655,6 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     elig_d <- d %>% filter(eligworker==1)
     pop_target <- sum(elig_d %>% dplyr::select(PWGTP))*get(uptake_val)
     # filter to only those eligible for the program and taking or needing leave
-    min_takeup_cpl <- 0
     samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1) & get(length_var)>wait_period+min_takeup_cpl)
     # guess samp size needed based on number of rows and uptake value
     samp_size <- round(nrow(elig_d) * get(uptake_val))
