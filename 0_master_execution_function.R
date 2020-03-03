@@ -44,6 +44,7 @@ policy_simulation <- function(saveCSV=FALSE,
                               ext_resp_len = TRUE,  
                               rr_sensitive_leave_len=TRUE,
                               min_takeup_cpl = 5,
+                              alpha=0,
                               place_of_work = FALSE,
                               state = '',
                               dual_receiver = 1,
@@ -289,7 +290,7 @@ policy_simulation <- function(saveCSV=FALSE,
   d_acs_imp <-UPTAKE(d_acs_imp, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
                      illspouse_uptake, illchild_uptake, full_particip, wait_period,
                      maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
-                     maxlen_total,maxlen_DI,maxlen_PFL,dual_receiver, min_takeup_cpl)
+                     maxlen_total,maxlen_DI,maxlen_PFL,dual_receiver, min_takeup_cpl,alpha)
   # OUTPUT: ACS file with modified leave program variables based on user-specified program restrictions
   #         on maximum participation length and user-specified take-up rate assumptions
   

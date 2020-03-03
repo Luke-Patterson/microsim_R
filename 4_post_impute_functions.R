@@ -95,7 +95,7 @@ impute_leave_length <- function(d_train, d_test, ext_resp_len,rr_sensitive_leave
   #   Leave lengths are the same, except for own leaves, which are instead taken from the distribution of leave takers in FMLA survey reporting 
   #   receiving some pay from state programs. 
   
-filts <- c(own = "(take_own==1|need_own==1)",
+  filts <- c(own = "(take_own==1|need_own==1)",
                   illspouse = "(take_illspouse==1|need_illspouse==1) & nevermarried == 0 & divorced == 0",
                   illchild = "(take_illchild==1|need_illchild==1)",
                   illparent = "(take_illparent==1|need_illparent==1)",
@@ -639,7 +639,7 @@ EXTENDLEAVES <-function(d_train, d_test,wait_period, ext_base_effect,
 UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake, 
                    illspouse_uptake, illchild_uptake, full_particip, wait_period, 
                    maxlen_own, maxlen_matdis, maxlen_bond, maxlen_illparent, maxlen_illspouse, maxlen_illchild,
-                   maxlen_total, maxlen_DI, maxlen_PFL,dual_receiver,min_takeup_cpl) {
+                   maxlen_total, maxlen_DI, maxlen_PFL,dual_receiver,min_takeup_cpl,alpha) {
   
   # calculate uptake -> days of leave that program benefits are collected
   d['particip_length']=0
@@ -656,56 +656,36 @@ UPTAKE <- function(d, own_uptake, matdis_uptake, bond_uptake, illparent_uptake,
     pop_target <- sum(elig_d %>% dplyr::select(PWGTP))*get(uptake_val)
     # filter to only those eligible for the program and taking or needing leave
     samp_frame <- d %>% filter(eligworker==1 & (get(take_var)==1|get(need_var)==1) & get(length_var)>wait_period+min_takeup_cpl)
-    # guess samp size needed based on number of rows and uptake value
-    samp_size <- round(nrow(elig_d) * get(uptake_val))
-    # if full pariticipation is enabled, take the entire sample
-    adj_sample <- TRUE
-    if (full_particip==TRUE) {
-      samp_idx <- rownames(samp_frame)
-      adj_sample <- FALSE
-    # check to see if there's enough sample to do this draw
-    } else if (nrow(samp_frame)>=samp_size) {
-      samp_idx <- sample(rownames(samp_frame), samp_size)
-    # if not, just take all needers/takers
-    } else {
-      samp_idx <- rownames(samp_frame)
-      adj_sample <- FALSE
-      print(paste('Warning: insufficient sample for', i, 'leave type. Using all',i,'takers/needers.'))
-      print(paste(nrow(samp_frame),' taker/needer rows available.'))
-      print(paste(samp_size,' taker/needer rows needed to meet requested uptake rate of',uptake_val))
+    
+    # randomize order of sample rows - we'll be drawing in order from the top of the dataframe so we want order to be random.
+    if (alpha==0) {
+      
+      rows <- sample(nrow(samp_frame))
+      samp_frame <- samp_frame[rows,]
+      
+    } else if (alpha>0) {
+      
+      # if alpha is not 0, shuffle the rows randomly, but weighted by leave length ^ alpha
+      samp_frame[plen_var] <- samp_frame[length_var] - wait_period
+      samp_frame[plen_var] <- with(samp_frame, ifelse(get(plen_var)<0,0,get(plen_var)))
+      samp_frame['org_wgt'] <- samp_frame[plen_var] ** alpha
+      rows <- sample(nrow(samp_frame), prob = samp_frame$org_wgt)
+      samp_frame <- samp_frame[rows,]
+  
     }
-    # now <- Sys.time()
-    # add/remove individuals to get to pop target
-    samp_sum <- sum(samp_frame[samp_idx,'PWGTP'],na.rm=TRUE)
-
-    #time_elapsed('before pop target')
-    if (adj_sample==TRUE){ 
-      if (samp_sum> pop_target) {
-        while (samp_sum> pop_target & length(samp_idx)!=0) {
-          samp_idx <- samp_idx[2:length(samp_idx)]
-          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
-        }
-      } else if (samp_sum< pop_target) { 
-        while (samp_sum < pop_target & length(samp_idx)!=0){
-          # shuffle remaining idx's
-          remain_idx <- sample(setdiff(rownames(samp_frame),samp_idx))
-          samp_idx  <- append(samp_idx,remain_idx[2])
-          samp_sum <- sum(samp_frame[samp_idx,'PWGTP'])
-        }
-      }
-    }
-    samp_selected <- samp_frame[samp_idx,]
+    
+    # create cumulative sum of weights
+    samp_frame <- samp_frame %>% mutate(cumsum = cumsum(PWGTP))
+    
+    # select rows where cumsum is less than pop_target to take up
+    samp_selected <- samp_frame[samp_frame$cumsum < pop_target,]
     samp_selected[uptake_var] <- 1
-    # print('time taken for sampling addition')
-    # print(Sys.time()-now)
-    #time_elapsed('after pop target')
     
     # set uptake status for leave type by merging in uptake var from samp_selected
     d[uptake_var] <- samp_selected[match(d$id, samp_selected$id), uptake_var] 
     d[is.na(d[uptake_var]),uptake_var] <- 0
     
     # ensure any leave needers are now indicated as taking leave
-    
     d[take_var] <- with(d, ifelse(get(uptake_var)==1, 1, get(take_var)))
   
       # update/create participation vars
