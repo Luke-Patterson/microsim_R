@@ -8,4 +8,5 @@ logs
 10312019_R_Microsim_Model
 R_dataframes/resid_states/CA_resid.rds
 R_dataframes/resid_work/CA_work.rds
+R_dataframes
 restricted_data
